@@ -11,7 +11,7 @@ export default function LoginPage() {
     const redirectUrl =
       process.env.NODE_ENV === "development"
         ? "http://localhost:3000/calendar"
-        : "https://aki-hiro.vercel.app/calendar";
+        : "https://akikuma-hirokuma.vercel.app/calendar";
 
     setLoading(true);
     const { error } = await supabase.auth.signInWithOtp({
