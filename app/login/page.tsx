@@ -7,7 +7,12 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
 
   const handleLogin = async () => {
-    await supabase.auth.signInWithOtp({ email });
+    await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: "https://aki-hiro.vercel.app/calendar",
+      },
+    });
     alert("メールを確認してください");
   };
 
