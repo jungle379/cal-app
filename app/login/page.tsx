@@ -8,48 +8,56 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    const redirectUrl =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:3000/calendar"
-        : "https://akikuma-hirokuma.vercel.app/calendar";
+    if (!email) return alert("メールを入力してください");
 
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
 
-    if (error) {
-      alert(error.message);
-      return;
+    try {
+      const redirectUrl =
+        process.env.NODE_ENV === "development"
+          ? "http://localhost:3000/calendar"
+          : "https://aki-hiro.vercel.app/calendar";
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectUrl },
+      });
+
+      if (error) throw error;
+
+      alert("メールを送信しました。リンクをクリックしてログインしてください。");
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        // Error型の場合は message を安全に参照可能
+        alert(error.message);
+      } else {
+        // それ以外の場合の保険
+        alert("予期しないエラーが発生しました");
+      }
+    } finally {
+      setLoading(false);
     }
-
-    alert("メールを送信しました");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-sm bg-white p-6 rounded-2xl shadow space-y-4">
-        <h1 className="text-xl font-bold text-center">ログイン</h1>
+    <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-50">
+      <h1 className="text-2xl font-bold mb-6">ログイン</h1>
 
-        <input
-          type="email"
-          placeholder="メールアドレス"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-3 w-full rounded-lg focus:ring-2 focus:ring-black outline-none"
-        />
+      <input
+        type="email"
+        placeholder="メールアドレス"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        className="border p-3 rounded-lg w-full max-w-xs mb-4 focus:outline-none focus:ring-2 focus:ring-black"
+      />
 
-        <button
-          onClick={handleLogin}
-          disabled={loading}
-          className="bg-black text-white p-3 w-full rounded-xl active:scale-95 transition disabled:opacity-50"
-        >
-          {loading ? "送信中..." : "ログイン"}
-        </button>
-      </div>
+      <button
+        onClick={handleLogin}
+        disabled={loading}
+        className="bg-black text-white p-3 rounded-lg w-full max-w-xs active:scale-95 transition disabled:opacity-50"
+      >
+        {loading ? "送信中…" : "ログインリンクを送る"}
+      </button>
     </div>
   );
 }
