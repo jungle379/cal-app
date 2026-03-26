@@ -8,37 +8,25 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
-    console.log("clicked");
+    const redirectUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000/calendar"
+        : "https://aki-hiro.vercel.app/calendar";
 
-    try {
-      if (!email) {
-        alert("メールアドレスを入力してください");
-        return;
-      }
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: redirectUrl,
+      },
+    });
 
-      setLoading(true);
-
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: "https://aki-hiro.vercel.app/calendar",
-        },
-      });
-
-      console.log("RESULT:", data, error);
-
-      if (error) {
-        alert(error.message);
-        return;
-      }
-
-      alert("メールを送信しました");
-    } catch (e) {
-      console.error("ERROR:", e);
-      alert("エラーが発生しました");
-    } finally {
-      setLoading(false);
+    if (error) {
+      alert(error.message);
+      return;
     }
+
+    alert("メールを送信しました");
   };
 
   return (
