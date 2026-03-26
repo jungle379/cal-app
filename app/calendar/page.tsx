@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format } from "date-fns";
@@ -20,14 +19,13 @@ import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useEvents } from "@/hooks/useEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
-// import { MouseEvent } from "react";
 
 // -----------------------------
-// 型定義（ファイル内に記載）
+// 型定義
 // -----------------------------
 interface Event {
   id: string;
-  user_id: string; // 追加
+  user_id: string; // UUID
   title: string;
   memo: string;
   date: string; // yyyy-MM-dd
@@ -44,20 +42,19 @@ type TileProps = {
   date: Date;
   view: "month" | "year" | "decade" | "century";
 };
+
 // -----------------------------
 // カレンダーページ
 // -----------------------------
 export default function CalendarPage() {
-  const [user, setUser] = useState(supabase.auth.getSession);
   const [date, setDate] = useState(new Date());
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [modalOpened, setModalOpened] = useState(false);
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
-  const [eventUser, setEventUser] = useState("hiro");
+  const [eventUser, setEventUser] = useState(""); // UUID文字列
 
-  // const queryClient = useQueryClient();
   const formattedDate = format(date, "yyyy-MM-dd");
   const { data: events = [] } = useEvents(formattedDate);
   const { data: allEvents = [] } = useEvents("");
@@ -66,7 +63,7 @@ export default function CalendarPage() {
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // 日付に●
+  // 日付に●を表示
   const eventDates = useMemo(
     () => new Set(allEvents.map((e) => e.date)),
     [allEvents],
@@ -81,32 +78,26 @@ export default function CalendarPage() {
     return null;
   };
 
-  // 型安全なonChange
-  const handleDateChange = (
-    value: Date | Date[] | null,
-    // event: MouseEvent<HTMLButtonElement>,
-  ) => {
+  // 型安全な onChange
+  const handleDateChange = (value: Date | Date[] | null) => {
     if (!value) return;
-
-    // 単一日付の場合
-    if (value instanceof Date) {
-      setDate(value);
-    }
-    // 範囲選択の場合
-    else if (Array.isArray(value) && value[0] instanceof Date) {
-      setDate(value[0]); // 例として開始日だけ使う
-    }
+    if (value instanceof Date) setDate(value);
+    else if (Array.isArray(value) && value[0] instanceof Date)
+      setDate(value[0]);
   };
 
   // 予定追加
   const handleAdd = async () => {
-    if (!title) return;
-    await addEvent.mutateAsync({
+    if (!title || !eventUser) return;
+    const input: EventInput = {
       title,
       memo,
       date: formattedDate,
-      user_id: eventUser,
-    });
+      start_time: "09:00", // 仮固定
+      end_time: "10:00", // 仮固定
+      user_id: eventUser, // UUID
+    };
+    await addEvent.mutateAsync(input);
     setTitle("");
     setMemo("");
   };
@@ -120,31 +111,29 @@ export default function CalendarPage() {
     setModalOpened(true);
   };
 
+  // 予定更新
   const handleUpdate = async () => {
     if (!selectedEvent) return;
 
-    // EventInput 型に合わせる
     const updateData: EventInput & { id: string } = {
       id: selectedEvent.id,
       title,
       memo,
-      user_id: eventUser, // 型に含める
+      user_id: eventUser, // UUID
       date: selectedEvent.date,
       start_time: selectedEvent.start_time,
       end_time: selectedEvent.end_time,
     };
-
     await updateEvent.mutateAsync(updateData);
     setModalOpened(false);
   };
 
+  // 予定削除
   const handleDelete = async () => {
     if (!selectedEvent) return;
     await deleteEvent.mutate(selectedEvent.id);
     setModalOpened(false);
   };
-
-  if (!user) return <div>Loading...</div>;
 
   return (
     <Box p="md" style={{ maxWidth: 600, margin: "0 auto" }}>
@@ -178,8 +167,8 @@ export default function CalendarPage() {
           value={eventUser}
           onChange={(val) => val && setEventUser(val)}
           data={[
-            { value: "hiro", label: "ひろくま" },
-            { value: "aki", label: "あきくま" },
+            { value: "UUID_HIRO", label: "ひろくま" },
+            { value: "UUID_AKI", label: "あきくま" },
           ]}
         />
         <Button fullWidth onClick={handleAdd}>
@@ -188,13 +177,14 @@ export default function CalendarPage() {
       </Stack>
 
       {/* 予定一覧 */}
-      <Stack mt="md" gap="sm">
+      <Stack gap="sm" mt="md">
         {events.map((e) => (
           <Box
             key={e.id}
             p="sm"
             style={{
-              backgroundColor: e.user_id === "hiro" ? "#d0ebff" : "#ffd6d6",
+              backgroundColor:
+                e.user_id === "UUID_HIRO" ? "#d0ebff" : "#ffd6d6",
               borderRadius: 8,
             }}
             onClick={() => openEditModal(e)}
@@ -227,8 +217,8 @@ export default function CalendarPage() {
             value={eventUser}
             onChange={(val) => val && setEventUser(val)}
             data={[
-              { value: "hiro", label: "ひろくま" },
-              { value: "aki", label: "あきくま" },
+              { value: "UUID_HIRO", label: "ひろくま" },
+              { value: "UUID_AKI", label: "あきくま" },
             ]}
           />
           <Group justify="apart">
