@@ -29,7 +29,6 @@ export default function LoginPage() {
 
       if (error) {
         alert(error.message);
-        setLoading(false);
         return;
       }
 

@@ -9,29 +9,22 @@ export default function CalendarPage() {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
-  // 🔐 認証ガード（安定版）
   useEffect(() => {
-    let mounted = true;
+    let isMounted = true;
 
-    const init = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (!session) {
-        router.replace("/login");
-      } else {
-        setUser(session.user);
-      }
-    };
-
-    init();
+    // ⏱ フォールバック
+    const timeout = setTimeout(() => {
+      if (!isMounted) return;
+      router.replace("/login");
+    }, 2000);
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+
+      clearTimeout(timeout);
+
       if (!session) {
         router.replace("/login");
       } else {
@@ -39,8 +32,24 @@ export default function CalendarPage() {
       }
     });
 
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!isMounted) return;
+
+      if (session) {
+        clearTimeout(timeout);
+        setUser(session.user);
+      }
+    };
+
+    init();
+
     return () => {
-      mounted = false;
+      isMounted = false;
+      clearTimeout(timeout);
       subscription.unsubscribe();
     };
   }, [router]);
