@@ -1,52 +1,41 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 export default function HomePage() {
-  const [, setUser] = useState<User | null | undefined>(undefined);
   const router = useRouter();
 
   useEffect(() => {
     let mounted = true;
 
-    const checkAuth = async () => {
+    const checkSession = async () => {
+      // Supabaseのセッション取得
       const { data } = await supabase.auth.getSession();
+
       if (!mounted) return;
 
-      if (data.session?.user) {
-        setUser(data.session.user);
+      if (data.session) {
+        // ログイン済みならカレンダーへ
         router.replace("/calendar");
       } else {
-        setUser(null);
+        // 未ログインならログインページへ
         router.replace("/login");
       }
     };
 
-    checkAuth();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!mounted) return;
-      if (session?.user) {
-        setUser(session.user);
-        router.replace("/calendar");
-      } else {
-        setUser(null);
-        router.replace("/login");
-      }
-    });
+    checkSession();
 
     return () => {
       mounted = false;
-      listener.subscription.unsubscribe();
     };
   }, [router]);
 
+  // 即リダイレクトなので Loading 表示は最小限
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <p>Loading...</p>
+      <p className="text-gray-500">Loading...</p>
     </div>
   );
 }
