@@ -1,17 +1,22 @@
-import { Providers } from "./providers";
+"use client";
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { ReactNode } from "react";
+import { MantineProvider } from "@mantine/core";
+
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
       <body>
-        <Providers>{children}</Providers>
+        <MantineProvider
+          theme={
+            {
+              // colors や fontFamily などを必要に応じて設定可能
+            }
+          }
+          defaultColorScheme="light" // light / dark
+        >
+          {children}
+        </MantineProvider>
       </body>
     </html>
   );
