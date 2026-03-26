@@ -17,12 +17,14 @@ import { Event, TileProps } from "@/type/type";
 
 export default function CalendarPage() {
   const [user, setUser] = useState<User | null>(null);
-  const [date, setDate] = useState(new Date());
-  const [title, setTitle] = useState("");
-  const [memo, setMemo] = useState("");
+  const [date, setDate] = useState<Date>(new Date());
+
+  const [title, setTitle] = useState<string>("");
+  const [memo, setMemo] = useState<string>("");
+
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editMemo, setEditMemo] = useState("");
+  const [editTitle, setEditTitle] = useState<string>("");
+  const [editMemo, setEditMemo] = useState<string>("");
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -30,28 +32,39 @@ export default function CalendarPage() {
   const formattedDate = format(date, "yyyy-MM-dd");
 
   const { data: events = [] } = useEvents(formattedDate);
-  const { data: allEvents = [] } = useEvents("");
+  const { data: allEvents = [] } = useEvents(""); // 全体取得
 
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // 🔐 認証ガード
+  // 🔐 認証チェック
   useEffect(() => {
     let mounted = true;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!mounted) return;
-      if (!data.session) router.replace("/login");
-      else setUser(data.session.user);
+
+    const initAuth = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!mounted) return;
+
+        if (!data.session) {
+          router.replace("/login");
+        } else {
+          setUser(data.session.user);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+      }
     };
 
-    init();
+    initAuth();
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) router.replace("/login");
-      else setUser(session.user);
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) router.replace("/login");
+        else setUser(session.user);
+      },
+    );
 
     return () => {
       mounted = false;
@@ -59,14 +72,16 @@ export default function CalendarPage() {
     };
   }, [router]);
 
-  // 🔄 Realtimeで同期
+  // 🔄 リアルタイム同期
   useEffect(() => {
     const channel = supabase
       .channel("events")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "events" },
-        () => queryClient.invalidateQueries({ queryKey: ["events"] }),
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["events"] });
+        },
       )
       .subscribe();
 
@@ -78,14 +93,21 @@ export default function CalendarPage() {
   // ➕ 追加
   const handleAdd = async () => {
     if (!title || !user) return;
-    await addEvent.mutateAsync({
-      title,
-      memo,
-      date: formattedDate,
-      user_id: user.id,
-    });
-    setTitle("");
-    setMemo("");
+
+    try {
+      await addEvent.mutateAsync({
+        title,
+        memo,
+        date: formattedDate,
+        user_id: user.id,
+      });
+
+      setTitle("");
+      setMemo("");
+    } catch (err) {
+      const e = err as Error;
+      alert(e.message);
+    }
   };
 
   // ✏️ 編集
@@ -94,36 +116,56 @@ export default function CalendarPage() {
     setEditTitle(e.title);
     setEditMemo(e.memo);
   };
+
   const handleUpdate = async () => {
     if (!editingId) return;
-    await updateEvent.mutateAsync({
-      id: editingId,
-      title: editTitle,
-      memo: editMemo,
-    });
-    setEditingId(null);
+
+    try {
+      await updateEvent.mutateAsync({
+        id: editingId,
+        title: editTitle,
+        memo: editMemo,
+      });
+
+      setEditingId(null);
+    } catch (err) {
+      const e = err as Error;
+      alert(e.message);
+    }
   };
 
   // 🔴 日付に●表示
-  const eventDates = useMemo(
-    () => new Set(allEvents.map((e: Event) => e.date)),
-    [allEvents],
-  );
+  const eventDates = useMemo(() => {
+    return new Set(allEvents.map((e: Event) => e.date));
+  }, [allEvents]);
+
   const tileContent = ({ date, view }: TileProps) => {
     if (view !== "month") return null;
+
     const d = format(date, "yyyy-MM-dd");
-    if (eventDates.has(d))
+    if (eventDates.has(d)) {
       return <div className="w-1.5 h-1.5 bg-black rounded-full mx-auto mt-1" />;
+    }
     return null;
   };
 
   // 🚪 ログアウト
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace("/login");
+    try {
+      await supabase.auth.signOut();
+      router.replace("/login");
+    } catch (err) {
+      const e = err as Error;
+      alert(e.message);
+    }
   };
 
-  if (!user) return <div className="p-4">Loading...</div>;
+  if (!user)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Loading...
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex justify-center">
@@ -131,6 +173,7 @@ export default function CalendarPage() {
         {/* ヘッダー */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold tracking-tight">共有カレンダー</h1>
+
           <button
             onClick={handleLogout}
             className="text-sm px-3 py-1.5 rounded-lg border hover:bg-gray-100 transition"
@@ -140,7 +183,7 @@ export default function CalendarPage() {
         </div>
 
         {/* カレンダー */}
-        <div className="bg-white rounded-2xl shadow p-4 overflow-x-auto">
+        <div className="bg-white rounded-2xl shadow p-4">
           <Calendar
             value={date}
             onChange={(d) => setDate(d as Date)}
@@ -159,12 +202,13 @@ export default function CalendarPage() {
             />
             <label
               className="absolute left-3 top-3 text-gray-400 text-sm transition-all 
-      peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
-      peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
+              peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
+              peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
             >
               タイトル
             </label>
           </div>
+
           <div className="relative">
             <textarea
               value={memo}
@@ -174,12 +218,13 @@ export default function CalendarPage() {
             />
             <label
               className="absolute left-3 top-3 text-gray-400 text-sm transition-all 
-      peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
-      peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
+              peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
+              peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
             >
               メモ
             </label>
           </div>
+
           <button
             onClick={handleAdd}
             className="bg-black text-white rounded-xl p-3 w-full hover:scale-[1.02] transition"
@@ -193,7 +238,11 @@ export default function CalendarPage() {
           {events.map((e: Event) => (
             <div
               key={e.id}
-              className={`p-3 rounded-xl shadow bg-white ${e.user_id === user.id ? "border-l-4 border-blue-400" : "border-l-4 border-pink-400"}`}
+              className={`p-3 rounded-xl shadow bg-white ${
+                e.user_id === user.id
+                  ? "border-l-4 border-blue-400"
+                  : "border-l-4 border-pink-400"
+              }`}
             >
               {editingId === e.id ? (
                 <>
