@@ -2,20 +2,18 @@
 
 import { ReactNode } from "react";
 import { MantineProvider } from "@mantine/core";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja">
       <body>
-        <MantineProvider
-          theme={
-            {
-              // colors や fontFamily などを必要に応じて設定可能
-            }
-          }
-          defaultColorScheme="light" // light / dark
-        >
-          {children}
+        <MantineProvider theme={{}} defaultColorScheme="light">
+          <QueryClientProvider client={queryClient}>
+            {children}
+          </QueryClientProvider>
         </MantineProvider>
       </body>
     </html>
