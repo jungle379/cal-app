@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 export default function HomePage() {
   const router = useRouter();
   // 未ログインならログインページへ
-  router.replace("/login");
+  router.push("/login");
 
   // 即リダイレクトなので Loading 表示は最小限
   return (
