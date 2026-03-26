@@ -1,36 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
 
 export default function HomePage() {
   const router = useRouter();
-
-  useEffect(() => {
-    let mounted = true;
-
-    const checkSession = async () => {
-      // Supabaseのセッション取得
-      const { data } = await supabase.auth.getSession();
-
-      if (!mounted) return;
-
-      if (data.session) {
-        // ログイン済みならカレンダーへ
-        router.replace("/calendar");
-      } else {
-        // 未ログインならログインページへ
-        router.replace("/login");
-      }
-    };
-
-    checkSession();
-
-    return () => {
-      mounted = false;
-    };
-  }, [router]);
+  // 未ログインならログインページへ
+  router.replace("/login");
 
   // 即リダイレクトなので Loading 表示は最小限
   return (
