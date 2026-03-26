@@ -1,128 +1,72 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format } from "date-fns";
-
-import { useEvents } from "@/hooks/useEvent";
-import { useAddEvent } from "@/hooks/useAddEvent";
-import { useDeleteEvent } from "@/hooks/useDeleteEvent";
-import { useUpdateEvent } from "@/hooks/useUpdateEvent";
-import { useQueryClient } from "@tanstack/react-query";
-import { User } from "@supabase/supabase-js";
-import { Event, TileProps } from "@/type/type";
-
 import {
-  Stack,
-  Paper,
+  Button,
+  Modal,
   TextInput,
   Textarea,
-  Button,
-  Title,
-  Text,
+  Select,
   Group,
+  Stack,
+  Title,
+  Box,
 } from "@mantine/core";
+import { useAddEvent } from "@/hooks/useAddEvent";
+import { useDeleteEvent } from "@/hooks/useDeleteEvent";
+import { useEvents } from "@/hooks/useEvent";
+import { useUpdateEvent } from "@/hooks/useUpdateEvent";
+// import { MouseEvent } from "react";
 
+// -----------------------------
+// 型定義（ファイル内に記載）
+// -----------------------------
+interface Event {
+  id: string;
+  user_id: string; // 追加
+  title: string;
+  memo: string;
+  date: string; // yyyy-MM-dd
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Supabase insert 用型
+type EventInput = Omit<Event, "id" | "created_at" | "updated_at">;
+
+type TileProps = {
+  date: Date;
+  view: "month" | "year" | "decade" | "century";
+};
+// -----------------------------
+// カレンダーページ
+// -----------------------------
 export default function CalendarPage() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState(supabase.auth.getSession);
   const [date, setDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [modalOpened, setModalOpened] = useState(false);
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
+  const [eventUser, setEventUser] = useState("hiro");
 
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editMemo, setEditMemo] = useState("");
-
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
+  // const queryClient = useQueryClient();
   const formattedDate = format(date, "yyyy-MM-dd");
-
   const { data: events = [] } = useEvents(formattedDate);
-  const { data: allEvents = [] } = useEvents(""); // 全体取得
+  const { data: allEvents = [] } = useEvents("");
 
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // 🔐 認証
-  useEffect(() => {
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-
-      if (!data.session) {
-        router.replace("/login");
-      } else {
-        setUser(data.session.user);
-      }
-    };
-
-    init();
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-      if (!session) router.replace("/login");
-      else setUser(session.user);
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
-  }, [router]);
-
-  // リアルタイム同期
-  useEffect(() => {
-    const channel = supabase
-      .channel("events")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "events" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["events"] });
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const handleAdd = async () => {
-    if (!title || !user) return;
-
-    await addEvent.mutateAsync({
-      title,
-      memo,
-      date: formattedDate,
-      user_id: user.id,
-    });
-
-    setTitle("");
-    setMemo("");
-  };
-
-  const startEdit = (e: Event) => {
-    setEditingId(e.id);
-    setEditTitle(e.title);
-    setEditMemo(e.memo);
-  };
-
-  const handleUpdate = async () => {
-    if (!editingId) return;
-
-    await updateEvent.mutateAsync({
-      id: editingId,
-      title: editTitle,
-      memo: editMemo,
-    });
-
-    setEditingId(null);
-  };
-
+  // 日付に●
   const eventDates = useMemo(
     () => new Set(allEvents.map((e) => e.date)),
     [allEvents],
@@ -130,113 +74,171 @@ export default function CalendarPage() {
 
   const tileContent = ({ date, view }: TileProps) => {
     if (view !== "month") return null;
-
     const d = format(date, "yyyy-MM-dd");
-
     if (eventDates.has(d)) {
       return <div className="w-1.5 h-1.5 bg-black rounded-full mx-auto mt-1" />;
     }
-
     return null;
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    router.replace("/login");
+  // 型安全なonChange
+  const handleDateChange = (
+    value: Date | Date[] | null,
+    // event: MouseEvent<HTMLButtonElement>,
+  ) => {
+    if (!value) return;
+
+    // 単一日付の場合
+    if (value instanceof Date) {
+      setDate(value);
+    }
+    // 範囲選択の場合
+    else if (Array.isArray(value) && value[0] instanceof Date) {
+      setDate(value[0]); // 例として開始日だけ使う
+    }
   };
 
-  if (!user)
-    return (
-      <Stack align="center" justify="center" style={{ minHeight: "100vh" }}>
-        <Text>Loading...</Text>
-      </Stack>
-    );
+  // 予定追加
+  const handleAdd = async () => {
+    if (!title) return;
+    await addEvent.mutateAsync({
+      title,
+      memo,
+      date: formattedDate,
+      user_id: eventUser,
+    });
+    setTitle("");
+    setMemo("");
+  };
+
+  // モーダル開く（編集）
+  const openEditModal = (e: Event) => {
+    setSelectedEvent(e);
+    setTitle(e.title);
+    setMemo(e.memo);
+    setEventUser(e.user_id);
+    setModalOpened(true);
+  };
+
+  const handleUpdate = async () => {
+    if (!selectedEvent) return;
+
+    // EventInput 型に合わせる
+    const updateData: EventInput & { id: string } = {
+      id: selectedEvent.id,
+      title,
+      memo,
+      user_id: eventUser, // 型に含める
+      date: selectedEvent.date,
+      start_time: selectedEvent.start_time,
+      end_time: selectedEvent.end_time,
+    };
+
+    await updateEvent.mutateAsync(updateData);
+    setModalOpened(false);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEvent) return;
+    await deleteEvent.mutate(selectedEvent.id);
+    setModalOpened(false);
+  };
+
+  if (!user) return <div>Loading...</div>;
 
   return (
-    <Stack p="md">
-      <Group>
-        <Title order={2}>共有カレンダー</Title>
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          ログアウト
-        </Button>
-      </Group>
+    <Box p="md" style={{ maxWidth: 600, margin: "0 auto" }}>
+      <Title mb="md" order={2}>
+        共有カレンダー
+      </Title>
 
-      <Paper shadow="xs" p="md">
-        <Calendar
-          value={date}
-          onChange={(d) => setDate(d as Date)}
-          tileContent={tileContent}
-        />
-      </Paper>
+      {/* カレンダー */}
+      <Calendar
+        value={date}
+        onChange={
+          handleDateChange as unknown as typeof Calendar.prototype.onChange
+        }
+        tileContent={tileContent}
+      />
 
-      <Paper shadow="xs" p="md">
+      {/* 予定追加 */}
+      <Stack gap="sm" mt="md">
         <TextInput
           placeholder="タイトル"
           value={title}
           onChange={(e) => setTitle(e.currentTarget.value)}
-          mb="sm"
         />
         <Textarea
           placeholder="メモ"
           value={memo}
           onChange={(e) => setMemo(e.currentTarget.value)}
-          mb="sm"
+        />
+        <Select
+          label="ユーザー"
+          value={eventUser}
+          onChange={(val) => val && setEventUser(val)}
+          data={[
+            { value: "hiro", label: "ひろくま" },
+            { value: "aki", label: "あきくま" },
+          ]}
         />
         <Button fullWidth onClick={handleAdd}>
           追加
         </Button>
-      </Paper>
+      </Stack>
 
-      {events.map((e: Event) => (
-        <Paper key={e.id} shadow="xs" p="sm">
-          {editingId === e.id ? (
-            <Stack>
-              <TextInput
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.currentTarget.value)}
-              />
-              <Textarea
-                value={editMemo}
-                onChange={(e) => setEditMemo(e.currentTarget.value)}
-              />
-              <Group>
-                <Button color="green" size="xs" onClick={handleUpdate}>
-                  保存
-                </Button>
-                <Button
-                  color="gray"
-                  size="xs"
-                  onClick={() => setEditingId(null)}
-                >
-                  キャンセル
-                </Button>
-              </Group>
-            </Stack>
-          ) : (
-            <Stack>
-              <Text style={{ fontWeight: "500" }}>{e.title}</Text>
-              <Text size="sm" color="dimmed">
-                {e.memo}
-              </Text>
-              <Group>
-                <Button variant="subtle" size="xs" onClick={() => startEdit(e)}>
-                  編集
-                </Button>
-                <Button
-                  variant="subtle"
-                  color="red"
-                  size="xs"
-                  onClick={() => {
-                    if (confirm("削除しますか？")) deleteEvent.mutate(e.id);
-                  }}
-                >
-                  削除
-                </Button>
-              </Group>
-            </Stack>
-          )}
-        </Paper>
-      ))}
-    </Stack>
+      {/* 予定一覧 */}
+      <Stack mt="md" gap="sm">
+        {events.map((e) => (
+          <Box
+            key={e.id}
+            p="sm"
+            style={{
+              backgroundColor: e.user_id === "hiro" ? "#d0ebff" : "#ffd6d6",
+              borderRadius: 8,
+            }}
+            onClick={() => openEditModal(e)}
+          >
+            <strong>{e.title}</strong>
+            <div>{e.memo}</div>
+          </Box>
+        ))}
+      </Stack>
+
+      {/* 編集モーダル */}
+      <Modal
+        opened={modalOpened}
+        onClose={() => setModalOpened(false)}
+        title="予定編集"
+      >
+        <Stack gap="sm">
+          <TextInput
+            placeholder="タイトル"
+            value={title}
+            onChange={(e) => setTitle(e.currentTarget.value)}
+          />
+          <Textarea
+            placeholder="メモ"
+            value={memo}
+            onChange={(e) => setMemo(e.currentTarget.value)}
+          />
+          <Select
+            label="ユーザー"
+            value={eventUser}
+            onChange={(val) => val && setEventUser(val)}
+            data={[
+              { value: "hiro", label: "ひろくま" },
+              { value: "aki", label: "あきくま" },
+            ]}
+          />
+          <Group justify="apart">
+            <Button color="red" onClick={handleDelete}>
+              削除
+            </Button>
+            <Button onClick={handleUpdate}>保存</Button>
+          </Group>
+        </Stack>
+      </Modal>
+    </Box>
   );
 }

@@ -10,11 +10,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="ja">
       <body>
-        <MantineProvider theme={{}} defaultColorScheme="light">
-          <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={queryClient}>
+          <MantineProvider defaultColorScheme="light">
             {children}
-          </QueryClientProvider>
-        </MantineProvider>
+          </MantineProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );
