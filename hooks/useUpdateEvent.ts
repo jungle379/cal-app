@@ -5,6 +5,7 @@ type EventInput = {
   id: string;
   title: string;
   memo: string;
+  user_id: string;
   start_time: string;
   end_time: string;
 };
