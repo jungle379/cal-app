@@ -73,7 +73,7 @@ export default function CalendarPage() {
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
-  const [eventUser, setEventUser] = useState<"hiro" | "aki">("hiro");
+  const [eventUser, setEventUser] = useState<"hiro" | "aki">("aki");
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -292,7 +292,7 @@ export default function CalendarPage() {
             style={{
               cursor: "pointer",
               borderLeft: `5px solid ${
-                e.user_id === "hiro" ? "#228be6" : "#fa5252"
+                e.user_id === "hiro" ? "#228be6" : "#fa52bf"
               }`,
             }}
           >
