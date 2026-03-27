@@ -16,11 +16,13 @@ import {
   Card,
   Title,
   Box,
+  Notification,
 } from "@mantine/core";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
+import z from "zod";
 
 // -----------------------------
 // 型定義
@@ -41,6 +43,31 @@ interface TileProps {
 }
 
 // -----------------------------
+// -----------------------------
+// Zodスキーマ
+// -----------------------------
+const eventSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "タイトルは必須です")
+      .max(50, "タイトルは50文字以内です"),
+
+    memo: z.string().max(200, "メモは200文字以内です").optional(),
+
+    start_time: z.string().regex(/^\d{2}:\d{2}$/, "時間形式が不正です"),
+
+    end_time: z.string().regex(/^\d{2}:\d{2}$/, "時間形式が不正です"),
+
+    user_id: z.enum(["hiro", "aki"]),
+  })
+  .refine((data) => data.start_time < data.end_time, {
+    message: "終了時間は開始時間より後にしてください",
+    path: ["end_time"],
+  });
+
+// -----------------------------
 export default function CalendarPage() {
   const [date, setDate] = useState<Date>(new Date());
 
@@ -54,6 +81,9 @@ export default function CalendarPage() {
   const [opened, setOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [toast, setToast] = useState<string | null>(null);
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
@@ -79,9 +109,33 @@ export default function CalendarPage() {
     return null;
   };
 
+  // バリデーション関数
+  const validate = () => {
+    const result = eventSchema.safeParse({
+      title,
+      memo,
+      start_time: startTime,
+      end_time: endTime,
+      user_id: eventUser,
+    });
+
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.issues.forEach((err) => {
+        const key = err.path[0] as string;
+        if (key) fieldErrors[key] = err.message;
+      });
+      setErrors(fieldErrors);
+      return false;
+    }
+
+    setErrors({});
+    return true;
+  };
+
   // ➕ 追加
   const handleAdd = async () => {
-    if (!title) return;
+    if (!validate()) return;
 
     await addEvent.mutateAsync({
       title,
@@ -94,6 +148,9 @@ export default function CalendarPage() {
 
     setTitle("");
     setMemo("");
+    setStartTime("09:00");
+    setEndTime("10:00");
+    setToast("予定を追加しました。");
   };
 
   // ✏️ モーダル開く
@@ -116,6 +173,7 @@ export default function CalendarPage() {
   // ✏️ 更新
   const handleUpdate = async () => {
     if (!selectedEvent) return;
+    if (!validate()) return;
 
     await updateEvent.mutateAsync({
       id: selectedEvent.id,
@@ -127,15 +185,25 @@ export default function CalendarPage() {
     });
 
     setOpened(false);
+    setTitle("");
+    setMemo("");
+    setStartTime("09:00");
+    setEndTime("10:00");
+    setToast("予定を更新しました。");
   };
 
   // 🗑 削除
   const handleDelete = async () => {
     if (!selectedEvent) return;
 
-    await deleteEvent.mutate(selectedEvent.id);
+    deleteEvent.mutate(selectedEvent.id);
     setDeleteOpened(false);
     setOpened(false);
+    setTitle("");
+    setMemo("");
+    setStartTime("09:00");
+    setEndTime("10:00");
+    setToast("予定を削除しました。");
   };
 
   // ⏰ ソート
@@ -146,6 +214,12 @@ export default function CalendarPage() {
   return (
     <Stack p="md" maw={500} mx="auto">
       <Title order={2}>共有カレンダー</Title>
+
+      {toast && (
+        <Notification color="teal" onClose={() => setToast(null)}>
+          {toast}
+        </Notification>
+      )}
 
       {/* カレンダー */}
       <Calendar
@@ -160,12 +234,14 @@ export default function CalendarPage() {
           <TextInput
             placeholder="タイトル"
             value={title}
+            error={errors.title}
             onChange={(e) => setTitle(e.currentTarget.value)}
           />
 
           <Textarea
             placeholder="メモ"
             value={memo}
+            error={errors.memo}
             onChange={(e) => setMemo(e.currentTarget.value)}
           />
 
@@ -183,11 +259,13 @@ export default function CalendarPage() {
             <TextInput
               type="time"
               value={startTime}
+              error={errors.start_time}
               onChange={(e) => setStartTime(e.currentTarget.value)}
             />
             <TextInput
               type="time"
               value={endTime}
+              error={errors.end_time}
               onChange={(e) => setEndTime(e.currentTarget.value)}
             />
           </Group>
@@ -233,11 +311,13 @@ export default function CalendarPage() {
         <Stack>
           <TextInput
             value={title}
+            error={errors.title}
             onChange={(e) => setTitle(e.currentTarget.value)}
           />
 
           <Textarea
             value={memo}
+            error={errors.memo}
             onChange={(e) => setMemo(e.currentTarget.value)}
           />
 
@@ -253,12 +333,14 @@ export default function CalendarPage() {
           <Group grow>
             <TextInput
               type="time"
+              error={errors.start_time}
               value={startTime}
               onChange={(e) => setStartTime(e.currentTarget.value)}
             />
             <TextInput
               type="time"
               value={endTime}
+              error={errors.end_time}
               onChange={(e) => setEndTime(e.currentTarget.value)}
             />
           </Group>
