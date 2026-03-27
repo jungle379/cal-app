@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format } from "date-fns";
-
 import {
+  Modal,
+  Badge,
   Button,
   TextInput,
   Textarea,
@@ -14,8 +15,8 @@ import {
   Group,
   Card,
   Title,
+  Box,
 } from "@mantine/core";
-
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
@@ -45,12 +46,14 @@ export default function CalendarPage() {
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
-  const [eventUser, setEventUser] = useState<"hiro" | "aki">("aki");
+  const [eventUser, setEventUser] = useState<"hiro" | "aki">("hiro");
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
 
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [opened, setOpened] = useState(false);
+  const [deleteOpened, setDeleteOpened] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
@@ -93,22 +96,29 @@ export default function CalendarPage() {
     setMemo("");
   };
 
-  // ✏️ 編集開始
-  const startEdit = (e: Event) => {
-    setEditingId(e.id);
+  // ✏️ モーダル開く
+  const openModal = (e: Event) => {
+    setSelectedEvent(e);
     setTitle(e.title);
     setMemo(e.memo);
     setStartTime(e.start_time);
     setEndTime(e.end_time);
     setEventUser(e.user_id);
+    setOpened(true);
+  };
+
+  // ❌ 削除モーダル
+  const openDeleteModal = (e: Event) => {
+    setSelectedEvent(e);
+    setDeleteOpened(true);
   };
 
   // ✏️ 更新
   const handleUpdate = async () => {
-    if (!editingId) return;
+    if (!selectedEvent) return;
 
     await updateEvent.mutateAsync({
-      id: editingId,
+      id: selectedEvent.id,
       title,
       memo,
       user_id: eventUser,
@@ -116,10 +126,22 @@ export default function CalendarPage() {
       end_time: endTime,
     });
 
-    setEditingId(null);
-    setTitle("");
-    setMemo("");
+    setOpened(false);
   };
+
+  // 🗑 削除
+  const handleDelete = async () => {
+    if (!selectedEvent) return;
+
+    await deleteEvent.mutate(selectedEvent.id);
+    setDeleteOpened(false);
+    setOpened(false);
+  };
+
+  // ⏰ ソート
+  const sortedEvents = [...events].sort((a, b) =>
+    a.start_time.localeCompare(b.start_time),
+  );
 
   return (
     <Stack p="md" maw={500} mx="auto">
@@ -132,7 +154,7 @@ export default function CalendarPage() {
         tileContent={tileContent}
       />
 
-      {/* 入力 */}
+      {/* 追加フォーム */}
       <Card shadow="sm" p="md">
         <Stack>
           <TextInput
@@ -170,46 +192,106 @@ export default function CalendarPage() {
             />
           </Group>
 
-          <Button onClick={editingId ? handleUpdate : handleAdd}>
-            {editingId ? "更新" : "追加"}
-          </Button>
+          <Button onClick={handleAdd}>追加</Button>
         </Stack>
       </Card>
 
       {/* 一覧 */}
       <Stack>
-        {events.map((e: Event) => (
+        {sortedEvents.map((e: Event) => (
           <Card
             key={e.id}
             shadow="xs"
             p="md"
+            onClick={() => openModal(e)}
             style={{
+              cursor: "pointer",
               borderLeft: `5px solid ${
                 e.user_id === "hiro" ? "#228be6" : "#fa5252"
               }`,
             }}
           >
-            <Title order={5}>{e.title}</Title>
-            <div>{e.memo}</div>
-            <div>
-              {e.start_time} - {e.end_time}
-            </div>
+            <Group justify="space-between">
+              <Title order={5}>{e.title}</Title>
 
-            <Group mt="sm">
-              <Button size="xs" onClick={() => startEdit(e)}>
-                編集
-              </Button>
-              <Button
-                size="xs"
-                color="red"
-                onClick={() => deleteEvent.mutate(e.id)}
-              >
-                削除
-              </Button>
+              <Badge color={e.user_id === "hiro" ? "blue" : "pink"}>
+                {e.user_id === "hiro" ? "ひろくま" : "あきくま"}
+              </Badge>
             </Group>
+
+            <Box>{e.memo}</Box>
+
+            <Box style={{ fontSize: 12, opacity: 0.7 }}>
+              {e.start_time} - {e.end_time}
+            </Box>
           </Card>
         ))}
       </Stack>
+
+      {/* 編集モーダル */}
+      <Modal opened={opened} onClose={() => setOpened(false)} title="予定編集">
+        <Stack>
+          <TextInput
+            value={title}
+            onChange={(e) => setTitle(e.currentTarget.value)}
+          />
+
+          <Textarea
+            value={memo}
+            onChange={(e) => setMemo(e.currentTarget.value)}
+          />
+
+          <Select
+            value={eventUser}
+            onChange={(v) => v && setEventUser(v as "hiro" | "aki")}
+            data={[
+              { value: "hiro", label: "ひろくま" },
+              { value: "aki", label: "あきくま" },
+            ]}
+          />
+
+          <Group grow>
+            <TextInput
+              type="time"
+              value={startTime}
+              onChange={(e) => setStartTime(e.currentTarget.value)}
+            />
+            <TextInput
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.currentTarget.value)}
+            />
+          </Group>
+
+          <Group justify="space-between">
+            <Button color="red" onClick={() => openDeleteModal(selectedEvent!)}>
+              削除
+            </Button>
+            <Button onClick={handleUpdate}>保存</Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* 削除確認モーダル */}
+      <Modal
+        opened={deleteOpened}
+        onClose={() => setDeleteOpened(false)}
+        title="削除確認"
+      >
+        <Stack>
+          <Box>この予定を削除しますか？</Box>
+
+          <Group justify="space-between">
+            <Button variant="default" onClick={() => setDeleteOpened(false)}>
+              キャンセル
+            </Button>
+
+            <Button color="red" onClick={handleDelete}>
+              削除する
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Stack>
   );
 }
