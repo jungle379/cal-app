@@ -163,6 +163,13 @@ export default function CalendarPage() {
     setEventUser(e.user_id);
     setOpened(true);
   };
+  const closeModal = () => {
+    setTitle("");
+    setMemo("");
+    setStartTime("09:00");
+    setEndTime("10:00");
+    setOpened(false);
+  };
 
   // ❌ 削除モーダル
   const openDeleteModal = (e: Event) => {
@@ -307,7 +314,7 @@ export default function CalendarPage() {
       </Stack>
 
       {/* 編集モーダル */}
-      <Modal opened={opened} onClose={() => setOpened(false)} title="予定編集">
+      <Modal opened={opened} onClose={() => closeModal()} title="予定編集">
         <Stack>
           <TextInput
             value={title}
