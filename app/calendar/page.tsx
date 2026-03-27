@@ -15,35 +15,39 @@ import { useQueryClient } from "@tanstack/react-query";
 import { User } from "@supabase/supabase-js";
 
 // -----------------------------
-// 型定義（ファイル内）
+// 型定義
 // -----------------------------
 interface Event {
   id: string;
-  user_id: string; // Supabase UUID
+  user_id: string;
   title: string;
   memo: string;
-  date: string; // yyyy-MM-dd
-  start_time?: string; // HH:mm
-  end_time?: string; // HH:mm
-  created_at?: string;
-  updated_at?: string;
+  date: string;
+  start_time: string;
+  end_time: string;
 }
 
 interface TileProps {
   view: string;
   date: Date;
 }
-
+// -----------------------------
 export default function CalendarPage() {
   const [user, setUser] = useState<User | null>(null);
   const [date, setDate] = useState<Date>(new Date());
 
-  const [title, setTitle] = useState<string>("");
-  const [memo, setMemo] = useState<string>("");
+  const [title, setTitle] = useState("");
+  const [memo, setMemo] = useState("");
+
+  // ⭐ 追加
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState<string>("");
-  const [editMemo, setEditMemo] = useState<string>("");
+  const [editTitle, setEditTitle] = useState("");
+  const [editMemo, setEditMemo] = useState("");
+  const [editStartTime, setEditStartTime] = useState("09:00");
+  const [editEndTime, setEditEndTime] = useState("10:00");
 
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -51,39 +55,33 @@ export default function CalendarPage() {
   const formattedDate = format(date, "yyyy-MM-dd");
 
   const { data: events = [] } = useEvents(formattedDate);
-  const { data: allEvents = [] } = useEvents(""); // 全体取得
+  const { data: allEvents = [] } = useEvents("");
 
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
 
-  // 🔐 認証チェック
+  // 🔐 認証
   useEffect(() => {
     let mounted = true;
 
-    const initAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!mounted) return;
+    const init = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
 
-        if (!data.session) {
-          router.replace("/login");
-        } else {
-          setUser(data.session.user);
-        }
-      } catch (err) {
-        console.error("Auth error:", err);
+      if (!data.session) {
+        router.replace("/login");
+      } else {
+        setUser(data.session.user);
       }
     };
 
-    initAuth();
+    init();
 
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session) router.replace("/login");
-        else setUser(session.user);
-      },
-    );
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      if (!session) router.replace("/login");
+      else setUser(session.user);
+    });
 
     return () => {
       mounted = false;
@@ -91,7 +89,7 @@ export default function CalendarPage() {
     };
   }, [router]);
 
-  // 🔄 リアルタイム同期
+  // 🔄 realtime
   useEffect(() => {
     const channel = supabase
       .channel("events")
@@ -113,54 +111,51 @@ export default function CalendarPage() {
   const handleAdd = async () => {
     if (!title || !user) return;
 
-    try {
-      await addEvent.mutateAsync({
-        title,
-        memo,
-        date: formattedDate,
-        user_id: user.id,
-      });
+    await addEvent.mutateAsync({
+      title,
+      memo,
+      date: formattedDate,
+      user_id: user.id,
+      start_time: startTime,
+      end_time: endTime,
+    });
 
-      setTitle("");
-      setMemo("");
-    } catch (err) {
-      const e = err as Error;
-      alert(e.message);
-    }
+    setTitle("");
+    setMemo("");
   };
 
-  // ✏️ 編集
+  // ✏️ 編集開始
   const startEdit = (e: Event) => {
     setEditingId(e.id);
     setEditTitle(e.title);
     setEditMemo(e.memo);
+    setEditStartTime(e.start_time);
+    setEditEndTime(e.end_time);
   };
 
+  // ✏️ 更新
   const handleUpdate = async () => {
     if (!editingId) return;
 
-    try {
-      await updateEvent.mutateAsync({
-        id: editingId,
-        title: editTitle,
-        memo: editMemo,
-      });
+    await updateEvent.mutateAsync({
+      id: editingId,
+      title: editTitle,
+      memo: editMemo,
+      start_time: editStartTime,
+      end_time: editEndTime,
+    });
 
-      setEditingId(null);
-    } catch (err) {
-      const e = err as Error;
-      alert(e.message);
-    }
+    setEditingId(null);
   };
 
-  // 🔴 日付に●表示
-  const eventDates = useMemo(() => {
-    return new Set(allEvents.map((e: Event) => e.date));
-  }, [allEvents]);
+  // 🔴 日付マーク
+  const eventDates = useMemo(
+    () => new Set(allEvents.map((e: Event) => e.date)),
+    [allEvents],
+  );
 
   const tileContent = ({ date, view }: TileProps) => {
     if (view !== "month") return null;
-
     const d = format(date, "yyyy-MM-dd");
     if (eventDates.has(d)) {
       return <div className="w-1.5 h-1.5 bg-black rounded-full mx-auto mt-1" />;
@@ -168,153 +163,105 @@ export default function CalendarPage() {
     return null;
   };
 
-  // 🚪 ログアウト
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      router.replace("/login");
-    } catch (err) {
-      const e = err as Error;
-      alert(e.message);
-    }
-  };
-
-  if (!user)
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading...
-      </div>
-    );
+  if (!user) return <div>Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8 flex justify-center">
-      <div className="w-full max-w-lg">
-        {/* ヘッダー */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold tracking-tight">共有カレンダー</h1>
+    <div className="min-h-screen p-4 max-w-lg mx-auto">
+      <h1 className="text-xl font-bold mb-4">共有カレンダー</h1>
 
-          <button
-            onClick={handleLogout}
-            className="text-sm px-3 py-1.5 rounded-lg border hover:bg-gray-100 transition"
-          >
-            ログアウト
-          </button>
-        </div>
+      {/* カレンダー */}
+      <Calendar
+        value={date}
+        onChange={(d) => setDate(d as Date)}
+        tileContent={tileContent}
+      />
 
-        {/* カレンダー */}
-        <div className="bg-white rounded-2xl shadow p-4">
-          <Calendar
-            value={date}
-            onChange={(d) => setDate(d as Date)}
-            tileContent={tileContent}
+      {/* 追加フォーム */}
+      <div className="mt-4 space-y-2">
+        <input
+          placeholder="タイトル"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="border p-2 w-full"
+        />
+
+        <textarea
+          placeholder="メモ"
+          value={memo}
+          onChange={(e) => setMemo(e.target.value)}
+          className="border p-2 w-full"
+        />
+
+        {/* ⭐ 時間 */}
+        <div className="flex gap-2">
+          <input
+            type="time"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            className="border p-2 w-full"
+          />
+          <input
+            type="time"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            className="border p-2 w-full"
           />
         </div>
 
-        {/* 入力フォーム */}
-        <div className="bg-white rounded-2xl shadow p-4 mt-4 space-y-3">
-          <div className="relative">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder=" "
-              className="peer border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-black"
-            />
-            <label
-              className="absolute left-3 top-3 text-gray-400 text-sm transition-all 
-              peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
-              peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
-            >
-              タイトル
-            </label>
-          </div>
+        <button onClick={handleAdd} className="bg-black text-white p-2 w-full">
+          追加
+        </button>
+      </div>
 
-          <div className="relative">
-            <textarea
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              placeholder=" "
-              className="peer border rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-black"
-            />
-            <label
-              className="absolute left-3 top-3 text-gray-400 text-sm transition-all 
-              peer-focus:-top-2 peer-focus:text-xs peer-focus:text-black
-              peer-placeholder-shown:top-3 peer-placeholder-shown:text-sm"
-            >
-              メモ
-            </label>
-          </div>
+      {/* 一覧 */}
+      <div className="mt-4 space-y-2">
+        {events.map((e: Event) => (
+          <div key={e.id} className="border p-2 rounded">
+            {editingId === e.id ? (
+              <>
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="border p-1 w-full"
+                />
 
-          <button
-            onClick={handleAdd}
-            className="bg-black text-white rounded-xl p-3 w-full hover:scale-[1.02] transition"
-          >
-            追加
-          </button>
-        </div>
+                <textarea
+                  value={editMemo}
+                  onChange={(e) => setEditMemo(e.target.value)}
+                  className="border p-1 w-full"
+                />
 
-        {/* 予定一覧 */}
-        <div className="mt-4 space-y-2">
-          {events.map((e: Event) => (
-            <div
-              key={e.id}
-              className={`p-3 rounded-xl shadow bg-white ${
-                e.user_id === user.id
-                  ? "border-l-4 border-blue-400"
-                  : "border-l-4 border-pink-400"
-              }`}
-            >
-              {editingId === e.id ? (
-                <>
+                <div className="flex gap-2">
                   <input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="border p-1 w-full mb-1"
+                    type="time"
+                    value={editStartTime}
+                    onChange={(e) => setEditStartTime(e.target.value)}
+                    className="border p-1 w-full"
                   />
-                  <textarea
-                    value={editMemo}
-                    onChange={(e) => setEditMemo(e.target.value)}
-                    className="border p-1 w-full mb-1"
+                  <input
+                    type="time"
+                    value={editEndTime}
+                    onChange={(e) => setEditEndTime(e.target.value)}
+                    className="border p-1 w-full"
                   />
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleUpdate}
-                      className="bg-green-500 text-white px-2 rounded"
-                    >
-                      保存
-                    </button>
-                    <button
-                      onClick={() => setEditingId(null)}
-                      className="text-gray-500"
-                    >
-                      キャンセル
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p className="font-semibold">{e.title}</p>
-                  <p className="text-sm text-gray-500">{e.memo}</p>
-                  <div className="flex gap-3 mt-2 text-sm">
-                    <button
-                      onClick={() => startEdit(e)}
-                      className="text-blue-500"
-                    >
-                      編集
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (confirm("削除しますか？")) deleteEvent.mutate(e.id);
-                      }}
-                      className="text-red-500"
-                    >
-                      削除
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
+                </div>
+
+                <button onClick={handleUpdate}>保存</button>
+              </>
+            ) : (
+              <>
+                <p className="font-bold">{e.title}</p>
+                <p>{e.memo}</p>
+                <p className="text-sm text-gray-500">
+                  {e.start_time} - {e.end_time}
+                </p>
+
+                <button onClick={() => startEdit(e)}>編集</button>
+                <button onClick={() => deleteEvent.mutate(e.id)}>削除</button>
+              </>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
