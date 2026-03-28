@@ -4,15 +4,7 @@ import { ReactNode } from "react";
 import "@mantine/core/styles.css";
 import { MantineProvider } from "@mantine/core";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import type { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: {
-    default: "2人のカレンダー",
-    template: "%s | 2人のsカレンダー",
-  },
-  description: "シンプルな共有スケジュール管理アプリ",
-};
 const queryClient = new QueryClient();
 
 export default function RootLayout({ children }: { children: ReactNode }) {
