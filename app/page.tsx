@@ -3,10 +3,6 @@
 import { Button, Container, Title, Stack } from "@mantine/core";
 import { useRouter } from "next/navigation";
 
-export const metadata = {
-  title: "ログインページ",
-};
-
 export default function HomePage() {
   const router = useRouter();
 

@@ -24,10 +24,6 @@ import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
 import z from "zod";
 
-export const metadata = {
-  title: "2人のカレンダー",
-};
-
 // -----------------------------
 // 型定義
 // -----------------------------
