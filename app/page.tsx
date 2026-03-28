@@ -8,7 +8,7 @@ export default function HomePage() {
 
   return (
     <Container size="sm" py="xl">
-      <Stack py="lg" align="center">
+      <Stack py="lg" align="center" gap="xl">
         <Title order={1}>共有カレンダー</Title>
         <Button onClick={() => router.push("/calendar")}>
           カレンダーを開く

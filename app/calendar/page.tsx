@@ -93,7 +93,8 @@ export default function CalendarPage() {
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
-
+  console.log(startTime);
+  console.log(endTime);
   // 🔴 日付マーク
   const eventDates = useMemo(
     () => new Set(allEvents.map((e: Event) => e.date)),
