@@ -93,8 +93,9 @@ export default function CalendarPage() {
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
-  console.log(startTime);
-  console.log(endTime);
+
+  const formattedTime = (t: string) => t.slice(0, 5);
+
   // 🔴 日付マーク
   const eventDates = useMemo(
     () => new Set(allEvents.map((e: Event) => e.date)),
@@ -138,6 +139,10 @@ export default function CalendarPage() {
   const handleAdd = async () => {
     if (!validate()) return;
 
+    if (!formattedDate) {
+      setToast("日付が設定誤りです。");
+      return;
+    }
     await addEvent.mutateAsync({
       title,
       memo,
@@ -159,8 +164,8 @@ export default function CalendarPage() {
     setSelectedEvent(e);
     setTitle(e.title);
     setMemo(e.memo);
-    setStartTime(e.start_time);
-    setEndTime(e.end_time);
+    setStartTime(formattedTime(e.start_time));
+    setEndTime(formattedTime(e.end_time));
     setEventUser(e.user_id);
     setOpened(true);
   };
@@ -188,8 +193,8 @@ export default function CalendarPage() {
       title,
       memo,
       user_id: eventUser,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: formattedTime(startTime),
+      end_time: formattedTime(endTime),
     });
 
     setOpened(false);
