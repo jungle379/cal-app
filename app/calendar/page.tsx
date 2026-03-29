@@ -87,9 +87,9 @@ export default function CalendarPage() {
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
-  const { data: events = [] } = useEvents(formattedDate);
-  const { data: allEvents = [] } = useEvents("");
+  const { data: allEvents = [] } = useEvents();
 
+  const events = allEvents.filter((e) => e.date === formattedDate);
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
