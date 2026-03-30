@@ -14,10 +14,16 @@ export const useUpdateEvent = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, title, memo }: EventInput) => {
+    mutationFn: async ({
+      id,
+      title,
+      memo,
+      start_time,
+      end_time,
+    }: EventInput) => {
       const { error } = await supabase
         .from("events")
-        .update({ title, memo })
+        .update({ title, memo, start_time, end_time })
         .eq("id", id);
 
       if (error) throw error;
