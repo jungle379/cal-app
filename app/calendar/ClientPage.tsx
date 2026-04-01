@@ -331,7 +331,7 @@ export default function ClientPage() {
             data={[
               { value: "hiro", label: "ひろくま（青）" },
               { value: "aki", label: "あきくま（ピンク）" },
-              { value: "akihiro", label: "あきくま・ひろくま（黄色）" },
+              { value: "akihiro", label: "あきくま・ひろくま（オレンジ）" },
             ]}
           />
 
@@ -369,7 +369,7 @@ export default function ClientPage() {
                   ? "#228be6"
                   : e.user_id === "aki"
                     ? "#fa52bf"
-                    : "#c7f709"
+                    : "#fab005"
               }`,
             }}
           >
