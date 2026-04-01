@@ -17,12 +17,14 @@ import {
   Title,
   Box,
   Notification,
+  SegmentedControl,
 } from "@mantine/core";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
 import z from "zod";
+import { useBulkDeleteEvents } from "@/hooks/useBulkDeleteEvent";
 
 // -----------------------------
 // 型定義
@@ -80,7 +82,13 @@ export default function ClientPage() {
 
   const [opened, setOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
+  const [bulkOpened, setBulkOpened] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  const [bulkMode, setBulkMode] = useState<"range" | "month">("range");
+  const [bulkStart, setBulkStart] = useState("");
+  const [bulkEnd, setBulkEnd] = useState("");
+  const [bulkMonth, setBulkMonth] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -93,6 +101,7 @@ export default function ClientPage() {
   const addEvent = useAddEvent();
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
+  const bulkDelete = useBulkDeleteEvents();
 
   const formattedTime = (t: string) => t.slice(0, 5);
 
@@ -224,6 +233,63 @@ export default function ClientPage() {
     a.start_time.localeCompare(b.start_time),
   );
 
+  // -----------------------------
+  // 一括削除
+  // -----------------------------
+  const handleBulkDelete = async () => {
+    try {
+      if (bulkMode === "range") {
+        if (!bulkStart || !bulkEnd) {
+          setToast("期間を選択してください");
+          return;
+        }
+
+        await bulkDelete.mutateAsync({
+          mode: "range",
+          start: bulkStart,
+          end: bulkEnd,
+        });
+      }
+
+      if (bulkMode === "month") {
+        if (!bulkMonth) {
+          setToast("月を選択してください");
+          return;
+        }
+
+        const start = `${bulkMonth}-01`;
+        const end = `${bulkMonth}-31`;
+
+        await bulkDelete.mutateAsync({
+          mode: "month",
+
+          month: bulkMonth,
+        });
+      }
+
+      setBulkOpened(false);
+      setToast("削除しました");
+    } catch {
+      setToast("削除失敗");
+    }
+  };
+
+  // 件数
+  const bulkCount = useMemo(() => {
+    if (bulkMode === "range") {
+      return allEvents.filter((e) => e.date >= bulkStart && e.date <= bulkEnd)
+        .length;
+    }
+
+    if (bulkMode === "month") {
+      return allEvents.filter((e) => e.date.startsWith(bulkMonth)).length;
+    }
+
+    return 0;
+  }, [allEvents, bulkStart, bulkEnd, bulkMonth, bulkMode]);
+
+  // -----------------------------
+
   return (
     <Stack p="md" maw={500} mx="auto">
       <Title order={2}>共有カレンダー</Title>
@@ -240,6 +306,11 @@ export default function ClientPage() {
         onChange={(d) => setDate(d as Date)}
         tileContent={tileContent}
       />
+
+      {/* 一括削除ボタン */}
+      <Button color="red" onClick={() => setBulkOpened(true)}>
+        一括削除
+      </Button>
 
       {/* 追加フォーム */}
       <Card shadow="sm" p="md">
@@ -385,6 +456,56 @@ export default function ClientPage() {
               削除する
             </Button>
           </Group>
+        </Stack>
+      </Modal>
+
+      {/* 一括削除モーダル */}
+      <Modal
+        opened={bulkOpened}
+        onClose={() => setBulkOpened(false)}
+        title="一括削除"
+      >
+        <Stack>
+          <SegmentedControl
+            value={bulkMode}
+            onChange={(v) => setBulkMode(v as any)}
+            data={[
+              { label: "期間指定", value: "range" },
+              { label: "月単位", value: "month" },
+            ]}
+          />
+
+          {bulkMode === "range" && (
+            <>
+              <TextInput
+                type="date"
+                label="開始"
+                value={bulkStart}
+                onChange={(e) => setBulkStart(e.currentTarget.value)}
+              />
+              <TextInput
+                type="date"
+                label="終了"
+                value={bulkEnd}
+                onChange={(e) => setBulkEnd(e.currentTarget.value)}
+              />
+            </>
+          )}
+
+          {bulkMode === "month" && (
+            <TextInput
+              type="month"
+              label="対象月"
+              value={bulkMonth}
+              onChange={(e) => setBulkMonth(e.currentTarget.value)}
+            />
+          )}
+
+          <Box>削除対象: {bulkCount}件</Box>
+
+          <Button color="red" onClick={handleBulkDelete}>
+            削除する
+          </Button>
         </Stack>
       </Modal>
     </Stack>
