@@ -307,11 +307,6 @@ export default function ClientPage() {
         tileContent={tileContent}
       />
 
-      {/* 一括削除ボタン */}
-      <Button color="red" onClick={() => setBulkOpened(true)}>
-        一括削除
-      </Button>
-
       {/* 追加フォーム */}
       <Card shadow="sm" p="md">
         <Stack>
@@ -357,6 +352,11 @@ export default function ClientPage() {
           <Button onClick={handleAdd}>追加</Button>
         </Stack>
       </Card>
+
+      {/* 一括削除ボタン */}
+      <Button color="red" onClick={() => setBulkOpened(true)}>
+        一括削除
+      </Button>
 
       {/* 一覧 */}
       <Stack>
