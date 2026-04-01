@@ -353,11 +353,6 @@ export default function ClientPage() {
         </Stack>
       </Card>
 
-      {/* 一括削除ボタン */}
-      <Button color="red" onClick={() => setBulkOpened(true)}>
-        一括削除
-      </Button>
-
       {/* 一覧 */}
       <Stack>
         {sortedEvents.map((e: Event) => (
@@ -389,6 +384,11 @@ export default function ClientPage() {
           </Card>
         ))}
       </Stack>
+
+      {/* 一括削除ボタン */}
+      <Button color="red" onClick={() => setBulkOpened(true)}>
+        一括削除
+      </Button>
 
       {/* 編集モーダル */}
       <Modal opened={opened} onClose={() => closeModal()} title="予定編集">
