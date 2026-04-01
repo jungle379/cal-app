@@ -18,12 +18,13 @@ export const useUpdateEvent = () => {
       id,
       title,
       memo,
+      user_id,
       start_time,
       end_time,
     }: EventInput) => {
       const { error } = await supabase
         .from("events")
-        .update({ id, title, memo, start_time, end_time })
+        .update({ id, title, memo,user_id, start_time, end_time })
         .eq("id", id);
 
       if (error) throw error;
