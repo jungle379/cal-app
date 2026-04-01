@@ -31,7 +31,7 @@ import { useBulkDeleteEvents } from "@/hooks/useBulkDeleteEvent";
 // -----------------------------
 interface Event {
   id: string;
-  user_id: "hiro" | "aki";
+  user_id: "hiro" | "aki" | "akihiro";
   title: string;
   memo: string;
   date: string;
@@ -62,7 +62,7 @@ const eventSchema = z
 
     end_time: z.string().regex(/^\d{2}:\d{2}$/, "時間形式が不正です"),
 
-    user_id: z.enum(["hiro", "aki"]),
+    user_id: z.enum(["hiro", "aki", "akihiro"]),
   })
   .refine((data) => data.start_time < data.end_time, {
     message: "終了時間は開始時間より後にしてください",
