@@ -75,7 +75,7 @@ export default function ClientPage() {
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
-  const [eventUser, setEventUser] = useState<"hiro" | "aki">("aki");
+  const [eventUser, setEventUser] = useState<"hiro" | "aki" | "akihiro">("aki");
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -331,6 +331,7 @@ export default function ClientPage() {
             data={[
               { value: "hiro", label: "ひろくま（青）" },
               { value: "aki", label: "あきくま（ピンク）" },
+              { value: "akihiro", label: "あきくま・ひろくま（黄色）" },
             ]}
           />
 
@@ -364,15 +365,31 @@ export default function ClientPage() {
             style={{
               cursor: "pointer",
               borderLeft: `5px solid ${
-                e.user_id === "hiro" ? "#228be6" : "#fa52bf"
+                e.user_id === "hiro"
+                  ? "#228be6"
+                  : e.user_id === "aki"
+                    ? "#fa52bf"
+                    : "#c7f709"
               }`,
             }}
           >
             <Group justify="space-between">
               <Title order={5}>{e.title}</Title>
 
-              <Badge color={e.user_id === "hiro" ? "blue" : "pink"}>
-                {e.user_id === "hiro" ? "ひろくま" : "あきくま"}
+              <Badge
+                color={
+                  e.user_id === "hiro"
+                    ? "blue"
+                    : e.user_id === "aki"
+                      ? "pink"
+                      : "yellow"
+                }
+              >
+                {e.user_id === "hiro"
+                  ? "ひろくま"
+                  : e.user_id === "aki"
+                    ? "あきくま"
+                    : "あきくま・ひろくま"}
               </Badge>
             </Group>
 
@@ -407,10 +424,11 @@ export default function ClientPage() {
 
           <Select
             value={eventUser}
-            onChange={(v) => v && setEventUser(v as "hiro" | "aki")}
+            onChange={(v) => v && setEventUser(v as "hiro" | "aki" | "akihiro")}
             data={[
               { value: "hiro", label: "ひろくま" },
               { value: "aki", label: "あきくま" },
+              { value: "akihiro", label: "あきくま・ひろくま" },
             ]}
           />
 
