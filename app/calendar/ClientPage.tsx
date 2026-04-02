@@ -165,6 +165,7 @@ export default function ClientPage() {
     setMemo("");
     setStartTime("09:00");
     setEndTime("10:00");
+    setEventUser("aki");
     setToast("予定を追加しました。");
   };
 
@@ -181,6 +182,7 @@ export default function ClientPage() {
   const closeModal = () => {
     setTitle("");
     setMemo("");
+    setEventUser("aki");
     setStartTime("09:00");
     setEndTime("10:00");
     setOpened(false);
@@ -209,6 +211,7 @@ export default function ClientPage() {
     setOpened(false);
     setTitle("");
     setMemo("");
+    setEventUser("aki");
     setStartTime("09:00");
     setEndTime("10:00");
     setToast("予定を更新しました。");
@@ -223,6 +226,7 @@ export default function ClientPage() {
     setOpened(false);
     setTitle("");
     setMemo("");
+    setEventUser("aki");
     setStartTime("09:00");
     setEndTime("10:00");
     setToast("予定を削除しました。");
