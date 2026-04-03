@@ -83,6 +83,7 @@ export default function ClientPage() {
   const [opened, setOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
   const [bulkOpened, setBulkOpened] = useState(false);
+
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const [bulkMode, setBulkMode] = useState<"range" | "month">("range");
@@ -261,12 +262,8 @@ export default function ClientPage() {
           return;
         }
 
-        const start = `${bulkMonth}-01`;
-        const end = `${bulkMonth}-31`;
-
         await bulkDelete.mutateAsync({
           mode: "month",
-
           month: bulkMonth,
         });
       }
@@ -288,7 +285,6 @@ export default function ClientPage() {
     if (bulkMode === "month") {
       return allEvents.filter((e) => e.date.startsWith(bulkMonth)).length;
     }
-
     return 0;
   }, [allEvents, bulkStart, bulkEnd, bulkMonth, bulkMode]);
 
