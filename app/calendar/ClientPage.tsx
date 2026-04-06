@@ -106,6 +106,12 @@ export default function ClientPage() {
 
   const formattedTime = (t: string) => t.slice(0, 5);
 
+  if (toast !== null) {
+    setTimeout(() => {
+      setToast(null);
+    }, 5000);
+  }
+
   // 🔴 日付マーク
   const eventDates = useMemo(
     () => new Set(allEvents.map((e: Event) => e.date)),
@@ -168,6 +174,7 @@ export default function ClientPage() {
     setEndTime("10:00");
     setEventUser("aki");
     setToast("予定を追加しました。");
+    window.scrollTo(0, 0);
   };
 
   // ✏️ モーダル開く
@@ -216,6 +223,7 @@ export default function ClientPage() {
     setStartTime("09:00");
     setEndTime("10:00");
     setToast("予定を更新しました。");
+    window.scrollTo(0, 0);
   };
 
   // 🗑 削除
@@ -231,6 +239,7 @@ export default function ClientPage() {
     setStartTime("09:00");
     setEndTime("10:00");
     setToast("予定を削除しました。");
+    window.scrollTo(0, 0);
   };
 
   // ⏰ ソート
@@ -270,8 +279,10 @@ export default function ClientPage() {
 
       setBulkOpened(false);
       setToast("削除しました");
+      window.scrollTo(0, 0);
     } catch {
       setToast("削除失敗");
+      window.scrollTo(0, 0);
     }
   };
 
