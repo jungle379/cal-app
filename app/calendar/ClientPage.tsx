@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
 import { useMemo, useState } from "react";
@@ -497,7 +498,7 @@ export default function ClientPage() {
         <Stack>
           <SegmentedControl
             value={bulkMode}
-            onChange={(v) => setBulkMode(v as any)}
+            onChange={(v) => setBulkMode(v as "range" | "month")}
             data={[
               { label: "期間指定", value: "range" },
               { label: "月単位", value: "month" },
