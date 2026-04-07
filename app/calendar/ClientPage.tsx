@@ -341,8 +341,8 @@ export default function ClientPage() {
             value={eventUser}
             onChange={(v) => v && setEventUser(v as "hiro" | "aki")}
             data={[
-              { value: "hiro", label: "ひろくま（青）" },
               { value: "aki", label: "あきくま（ピンク）" },
+              { value: "hiro", label: "ひろくま（青）" },
               { value: "akihiro", label: "あきくま・ひろくま（オレンジ）" },
             ]}
           />
@@ -438,8 +438,8 @@ export default function ClientPage() {
             value={eventUser}
             onChange={(v) => v && setEventUser(v as "hiro" | "aki" | "akihiro")}
             data={[
-              { value: "hiro", label: "ひろくま" },
               { value: "aki", label: "あきくま" },
+              { value: "hiro", label: "ひろくま" },
               { value: "akihiro", label: "あきくま・ひろくま" },
             ]}
           />
