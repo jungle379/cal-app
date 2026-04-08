@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import { format } from "date-fns";
+import { ja } from "date-fns/locale";
 import {
   Modal,
   Badge,
@@ -367,10 +368,10 @@ export default function ClientPage() {
       </Card>
 
       {/* 一覧 */}
-      <Stack>
-        {sortedEvents.map((e: Event) => (
-          <>
-            <Box>{format(e.date, "yyyy年M月d日")}</Box>
+      {sortedEvents.length > 0 && (
+        <Stack>
+          <Box fw={700}>{format(date, "yyyy年M月d日(E)", { locale: ja })}</Box>
+          {sortedEvents.map((e: Event) => (
             <Card
               key={e.id}
               shadow="xs"
@@ -413,9 +414,9 @@ export default function ClientPage() {
                 {e.start_time} - {e.end_time}
               </Box>
             </Card>
-          </>
-        ))}
-      </Stack>
+          ))}
+        </Stack>
+      )}
 
       {/* 一括削除ボタン */}
       <Button color="red" onClick={() => setBulkOpened(true)}>
