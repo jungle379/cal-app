@@ -330,7 +330,7 @@ export default function ClientPage() {
           />
 
           <Textarea
-            placeholder="メモ"
+            placeholder="メモ(詳細や場所など)"
             value={memo}
             error={errors.memo}
             onChange={(e) => setMemo(e.currentTarget.value)}
@@ -369,48 +369,51 @@ export default function ClientPage() {
       {/* 一覧 */}
       <Stack>
         {sortedEvents.map((e: Event) => (
-          <Card
-            key={e.id}
-            shadow="xs"
-            p="md"
-            onClick={() => openModal(e)}
-            style={{
-              cursor: "pointer",
-              borderLeft: `5px solid ${
-                e.user_id === "hiro"
-                  ? "#228be6"
-                  : e.user_id === "aki"
-                    ? "#fa52bf"
-                    : "#fab005"
-              }`,
-            }}
-          >
-            <Group justify="space-between">
-              <Title order={5}>{e.title}</Title>
-
-              <Badge
-                color={
+          <>
+            <Box>{format(e.date, "yyyy年M月d日")}</Box>
+            <Card
+              key={e.id}
+              shadow="xs"
+              p="md"
+              onClick={() => openModal(e)}
+              style={{
+                cursor: "pointer",
+                borderLeft: `5px solid ${
                   e.user_id === "hiro"
-                    ? "blue"
+                    ? "#228be6"
                     : e.user_id === "aki"
-                      ? "pink"
-                      : "yellow"
-                }
-              >
-                {e.user_id === "hiro"
-                  ? "ひろくま"
-                  : e.user_id === "aki"
-                    ? "あきくま"
-                    : "あきくま・ひろくま"}
-              </Badge>
-            </Group>
+                      ? "#fa52bf"
+                      : "#fab005"
+                }`,
+              }}
+            >
+              <Group justify="space-between">
+                <Title order={5}>{e.title}</Title>
 
-            <Box>{e.memo}</Box>
+                <Badge
+                  color={
+                    e.user_id === "hiro"
+                      ? "blue"
+                      : e.user_id === "aki"
+                        ? "pink"
+                        : "yellow"
+                  }
+                >
+                  {e.user_id === "hiro"
+                    ? "ひろくま"
+                    : e.user_id === "aki"
+                      ? "あきくま"
+                      : "あきくま・ひろくま"}
+                </Badge>
+              </Group>
 
-            <Box style={{ fontSize: 12, opacity: 0.7 }}>
-              {e.start_time} - {e.end_time}
-            </Box>
-          </Card>
+              <Box>{e.memo}</Box>
+
+              <Box style={{ fontSize: 12, opacity: 0.7 }}>
+                {e.start_time} - {e.end_time}
+              </Box>
+            </Card>
+          </>
         ))}
       </Stack>
 
