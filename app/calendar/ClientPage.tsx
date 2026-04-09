@@ -124,7 +124,7 @@ export default function ClientPage() {
     if (view !== "month") return null;
     const d = format(date, "yyyy-MM-dd");
     if (eventDates.has(d)) {
-      return <div style={{ textAlign: "center" }}>●</div>;
+      return <Box style={{ textAlign: "center" }}>●</Box>;
     }
     return null;
   };
@@ -340,7 +340,7 @@ export default function ClientPage() {
           <Select
             label="ユーザー"
             value={eventUser}
-            onChange={(v) => v && setEventUser(v as "hiro" | "aki")}
+            onChange={(v) => v && setEventUser(v as "hiro" | "aki" | "akihiro")}
             data={[
               { value: "aki", label: "あきくま（ピンク）" },
               { value: "hiro", label: "ひろくま（青）" },
