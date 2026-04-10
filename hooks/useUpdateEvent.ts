@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 type EventInput = {
   id: string;
   title: string;
+  date: string;
   memo: string;
   user_id: string;
   start_time: string;
@@ -17,6 +18,7 @@ export const useUpdateEvent = () => {
     mutationFn: async ({
       id,
       title,
+      date,
       memo,
       user_id,
       start_time,
@@ -24,7 +26,7 @@ export const useUpdateEvent = () => {
     }: EventInput) => {
       const { error } = await supabase
         .from("events")
-        .update({ id, title, memo,user_id, start_time, end_time })
+        .update({ id, title, date, memo, user_id, start_time, end_time })
         .eq("id", id);
 
       if (error) throw error;

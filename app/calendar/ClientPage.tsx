@@ -47,6 +47,7 @@ interface TileProps {
 }
 
 // -----------------------------
+
 // -----------------------------
 // Zodスキーマ
 // -----------------------------
@@ -72,12 +73,16 @@ const eventSchema = z
   });
 
 // -----------------------------
+
+// カレンダーページ
 export default function ClientPage() {
   const [date, setDate] = useState<Date>(new Date());
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
   const [eventUser, setEventUser] = useState<"hiro" | "aki" | "akihiro">("aki");
+
+  const [editDate, setEditDate] = useState("");
 
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
@@ -187,6 +192,7 @@ export default function ClientPage() {
     setStartTime(formattedTime(e.start_time));
     setEndTime(formattedTime(e.end_time));
     setEventUser(e.user_id);
+    setEditDate(e.date);
     setOpened(true);
   };
   const closeModal = () => {
@@ -212,6 +218,7 @@ export default function ClientPage() {
     await updateEvent.mutateAsync({
       id: selectedEvent.id,
       title,
+      date: editDate,
       memo,
       user_id: eventUser,
       start_time: formattedTime(startTime),
@@ -426,6 +433,11 @@ export default function ClientPage() {
       {/* 編集モーダル */}
       <Modal opened={opened} onClose={() => closeModal()} title="予定編集">
         <Stack>
+          <TextInput
+            type="date"
+            value={editDate}
+            onChange={(e) => setEditDate(e.currentTarget.value)}
+          />
           <TextInput
             value={title}
             error={errors.title}
