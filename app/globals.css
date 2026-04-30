@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* react-calendar */
+.app-react-calendar.react-calendar {
+  width: 100%;
+  max-width: 560px;
+}

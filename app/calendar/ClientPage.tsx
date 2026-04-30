@@ -20,6 +20,7 @@ import {
   Box,
   Notification,
   SegmentedControl,
+  Center,
 } from "@mantine/core";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
@@ -266,6 +267,10 @@ export default function ClientPage() {
           setToast("期間を選択してください");
           return;
         }
+        if (bulkStart > bulkEnd) {
+          setToast("開始日は終了日より前にしてください");
+          return;
+        }
 
         await bulkDelete.mutateAsync({
           mode: "range",
@@ -311,7 +316,7 @@ export default function ClientPage() {
   // -----------------------------
 
   return (
-    <Stack p="md" maw={500} mx="auto">
+    <Stack p="md" maw={560} mx="auto">
       <Title order={2}>共有カレンダー</Title>
 
       {toast && (
@@ -321,11 +326,14 @@ export default function ClientPage() {
       )}
 
       {/* カレンダー */}
-      <Calendar
-        value={date}
-        onChange={(d) => setDate(d as Date)}
-        tileContent={tileContent}
-      />
+      <Center>
+        <Calendar
+          className="app-react-calendar"
+          value={date}
+          onChange={(d) => setDate(d as Date)}
+          tileContent={tileContent}
+        />
+      </Center>
 
       {/* 追加フォーム */}
       <Card shadow="sm" p="md">
