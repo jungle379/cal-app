@@ -423,7 +423,14 @@ export default function ClientPage() {
                 </Badge>
               </Group>
 
-              <Box>{e.memo}</Box>
+              <Box
+                style={{
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word",
+                }}
+              >
+                {e.memo}
+              </Box>
 
               <Box style={{ fontSize: 12, opacity: 0.7 }}>
                 {e.start_time} - {e.end_time}
