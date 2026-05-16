@@ -21,6 +21,7 @@ import {
   Notification,
   SegmentedControl,
   Center,
+  Loader,
 } from "@mantine/core";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
@@ -104,7 +105,7 @@ export default function ClientPage() {
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
-  const { data: allEvents = [] } = useEvents();
+  const { data: allEvents = [], isLoading, error } = useEvents();
 
   const events = allEvents.filter((e) => e.date === formattedDate);
   const addEvent = useAddEvent();
@@ -314,6 +315,22 @@ export default function ClientPage() {
   }, [allEvents, bulkStart, bulkEnd, bulkMonth, bulkMode]);
 
   // -----------------------------
+
+  if (isLoading) {
+    return (
+      <Center style={{ minHeight: "100vh" }}>
+        <Loader />
+      </Center>
+    );
+  }
+
+  if (error) {
+    return (
+      <Center style={{ minHeight: "100vh" }}>
+        <Box>イベントの読み込みに失敗しました。</Box>
+      </Center>
+    );
+  }
 
   return (
     <Stack p="md" maw={560} mx="auto">
