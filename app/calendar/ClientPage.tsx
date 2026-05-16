@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/preserve-manual-memoization */
 "use client";
 
 import { useMemo, useState } from "react";
@@ -23,11 +22,11 @@ import {
   Center,
   Loader,
 } from "@mantine/core";
+import z from "zod";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
-import z from "zod";
 import { useBulkDeleteEvents } from "@/hooks/useBulkDeleteEvent";
 
 // -----------------------------
