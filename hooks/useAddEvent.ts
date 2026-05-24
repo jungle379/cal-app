@@ -1,14 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
-
-type EventInput = {
-  title: string;
-  memo: string;
-  date: string;
-  user_id: string;
-  start_time: string;
-  end_time: string;
-};
+import { EventInput } from "@/app/types/type";
 
 export const useAddEvent = () => {
   const queryClient = useQueryClient();

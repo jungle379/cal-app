@@ -28,26 +28,7 @@ import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
 import { useBulkDeleteEvents } from "@/hooks/useBulkDeleteEvent";
-
-// -----------------------------
-// 型定義
-// -----------------------------
-interface Event {
-  id: string;
-  user_id: "hiro" | "aki" | "akihiro";
-  title: string;
-  memo: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-}
-
-interface TileProps {
-  view: string;
-  date: Date;
-}
-
-// -----------------------------
+import { TileProps,Event } from "../types/type";
 
 // -----------------------------
 // Zodスキーマ

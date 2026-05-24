@@ -1,10 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { format } from "date-fns";
-
-type BulkDeleteParams =
-  | { mode: "range"; start: string; end: string }
-  | { mode: "month"; month: string };
+import { BulkDeleteParams } from "@/app/types/type";
 
 const getMonthRange = (month: string) => {
   // month is expected to be "YYYY-MM" from <input type="month">
