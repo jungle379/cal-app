@@ -117,7 +117,7 @@ export default function ClientPage() {
   if (toast !== null) {
     setTimeout(() => {
       setToast(null);
-    }, 5000);
+    }, 3000);
   }
 
   // 🔴 日付マーク

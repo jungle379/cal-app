@@ -15,14 +15,14 @@ export default function HomePage() {
         </Title>
       </Container>
 
-            <Container size="sm" py="xl" style={{ display: "flex", justifyContent: "center", height: "200px",width: "200px"  }}>
-          <Image
-      radius="md"
-      height="auto"
-      fit="contain"
-      width="auto"
-      src="/icon-192.png"
-    />
+      <Container size="sm" py="xl" style={{ display: "flex", justifyContent: "center", height: "200px",width: "200px"  }}>
+        <Image
+          radius="md"
+          height="auto"
+          fit="contain"
+          width="auto"
+          src="/icon-192.png"
+        />
       </Container>
 
       {/* 画面の高さ: 半分より少し下（例: 55%） */}
