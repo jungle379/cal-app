@@ -30,7 +30,7 @@ export default function HomePage() {
         style={{
           position: "absolute",
           insetInline: 0,
-          top: "55%",
+          top: "80%",
           transform: "translateY(-50%)",
         }}
       >
