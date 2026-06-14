@@ -25,7 +25,7 @@ export default function HomePage() {
         />
       </Container>
 
-      {/* 画面の高さ: 半分より少し下（例: 55%） */}
+      {/* 画面の高さ: 半分より少し下 */}
       <Center
         style={{
           position: "absolute",
