@@ -9,6 +9,7 @@ import {
   Modal,
   Badge,
   Button,
+  ActionIcon,
   TextInput,
   Textarea,
   Select,
@@ -85,7 +86,7 @@ export default function ClientPage() {
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
-  const { data: allEvents = [], isLoading, error } = useEvents();
+  const { data: allEvents = [], isLoading, error, refetch } = useEvents();
 
   const events = allEvents.filter((e) => e.date === formattedDate);
   const addEvent = useAddEvent();
@@ -314,7 +315,31 @@ export default function ClientPage() {
 
   return (
     <Stack p="md" maw={560} mx="auto">
-      <Title order={2}>共有カレンダー</Title>
+      <Group align="end">
+        <Title order={2}>共有カレンダー</Title>
+          <ActionIcon
+            variant="light"
+            onClick={() => refetch()}
+            aria-label="リロード"
+            style={{ marginLeft: 20 }}
+            size="lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
+            </svg>
+          </ActionIcon>
+      </Group>
 
       {toast && (
         <Notification color="teal" onClose={() => setToast(null)}>
