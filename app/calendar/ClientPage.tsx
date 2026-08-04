@@ -29,7 +29,7 @@ import { useAddEvent } from "@/hooks/useAddEvent";
 import { useDeleteEvent } from "@/hooks/useDeleteEvent";
 import { useUpdateEvent } from "@/hooks/useUpdateEvent";
 import { useBulkDeleteEvents } from "@/hooks/useBulkDeleteEvent";
-import { TileProps,Event } from "../types/type";
+import { TileProps, Event, UserId } from "../types/type";
 
 // -----------------------------
 // Zodスキーマ
@@ -44,15 +44,38 @@ const eventSchema = z
 
     memo: z.string().max(200, "メモは200文字以内です").optional(),
 
-    start_time: z.string().regex(/^\d{2}:\d{2}$/, "時間形式が不正です"),
+    start_time: z.string().trim(),
 
-    end_time: z.string().regex(/^\d{2}:\d{2}$/, "時間形式が不正です"),
+    end_time: z.string().trim(),
 
-    user_id: z.enum(["hiro", "aki", "akihiro"]),
+    user_id: z.enum(["hiro", "aki", "akihiro", "dinner"]),
   })
-  .refine((data) => data.start_time < data.end_time, {
-    message: "終了時間は開始時間より後にしてください",
-    path: ["end_time"],
+  .superRefine((data, ctx) => {
+    if (data.user_id === "dinner") return;
+
+    if (!/^\d{2}:\d{2}$/.test(data.start_time)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "時間形式が不正です",
+        path: ["start_time"],
+      });
+    }
+
+    if (!/^\d{2}:\d{2}$/.test(data.end_time)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "時間形式が不正です",
+        path: ["end_time"],
+      });
+    }
+
+    if (data.start_time && data.end_time && data.start_time >= data.end_time) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "終了時間は開始時間より後にしてください",
+        path: ["end_time"],
+      });
+    }
   });
 
 // -----------------------------
@@ -63,7 +86,7 @@ export default function ClientPage() {
 
   const [title, setTitle] = useState("");
   const [memo, setMemo] = useState("");
-  const [eventUser, setEventUser] = useState<"hiro" | "aki" | "akihiro">("aki");
+  const [eventUser, setEventUser] = useState<UserId>("aki");
 
   const [editDate, setEditDate] = useState("");
 
@@ -75,6 +98,21 @@ export default function ClientPage() {
   const [bulkOpened, setBulkOpened] = useState(false);
 
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+
+  const handleUserChange = (value: UserId | null) => {
+    if (!value) return;
+
+    setEventUser(value);
+
+    if (value === "dinner") {
+      setStartTime("18:00");
+      setEndTime("20:00");
+      return;
+    }
+
+    setStartTime("09:00");
+    setEndTime("10:00");
+  };
 
   const [bulkMode, setBulkMode] = useState<"range" | "month">("range");
   const [bulkStart, setBulkStart] = useState("");
@@ -122,8 +160,8 @@ export default function ClientPage() {
     const result = eventSchema.safeParse({
       title,
       memo,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: eventUser === "dinner" ? "18:00" : startTime,
+      end_time: eventUser === "dinner" ? "20:00" : endTime,
       user_id: eventUser,
     });
 
@@ -154,8 +192,8 @@ export default function ClientPage() {
       memo,
       date: formattedDate,
       user_id: eventUser,
-      start_time: startTime,
-      end_time: endTime,
+      start_time: eventUser === "dinner" ? "18:00" : startTime,
+      end_time: eventUser === "dinner" ? "20:00" : endTime,
     });
 
     setTitle("");
@@ -172,8 +210,8 @@ export default function ClientPage() {
     setSelectedEvent(e);
     setTitle(e.title);
     setMemo(e.memo);
-    setStartTime(formattedTime(e.start_time));
-    setEndTime(formattedTime(e.end_time));
+    setStartTime(e.user_id === "dinner" ? "18:00" : formattedTime(e.start_time));
+    setEndTime(e.user_id === "dinner" ? "20:00" : formattedTime(e.end_time));
     setEventUser(e.user_id);
     setEditDate(e.date);
     setOpened(true);
@@ -204,8 +242,8 @@ export default function ClientPage() {
       date: editDate,
       memo,
       user_id: eventUser,
-      start_time: formattedTime(startTime),
-      end_time: formattedTime(endTime),
+      start_time: eventUser === "dinner" ? "18:00" : formattedTime(startTime),
+      end_time: eventUser === "dinner" ? "20:00" : formattedTime(endTime),
     });
 
     setOpened(false);
@@ -377,11 +415,12 @@ export default function ClientPage() {
           <Select
             label="ユーザー"
             value={eventUser}
-            onChange={(v) => v && setEventUser(v as "hiro" | "aki" | "akihiro")}
+            onChange={(v) => handleUserChange(v as UserId | null)}
             data={[
               { value: "aki", label: "あきくま（ピンク）" },
               { value: "hiro", label: "ひろくま（青）" },
               { value: "akihiro", label: "あきくま・ひろくま（オレンジ）" },
+              { value: "dinner", label: "ディナー" },
             ]}
           />
 
@@ -390,12 +429,14 @@ export default function ClientPage() {
               type="time"
               value={startTime}
               error={errors.start_time}
+              disabled={eventUser === "dinner"}
               onChange={(e) => setStartTime(e.currentTarget.value)}
             />
             <TextInput
               type="time"
               value={endTime}
               error={errors.end_time}
+              disabled={eventUser === "dinner"}
               onChange={(e) => setEndTime(e.currentTarget.value)}
             />
           </Group>
@@ -407,58 +448,84 @@ export default function ClientPage() {
       {/* 一覧 */}
       {sortedEvents.length > 0 && (
         <Stack>
-          <Box fw={700}>{format(date, "yyyy年M月d日(E)", { locale: ja })}</Box>
-          {sortedEvents.map((e: Event) => (
+          <Group justify="space-between" align="center">
+            <Box fw={700}>{format(date, "yyyy年M月d日(E)", { locale: ja })}</Box>
+            {sortedEvents.filter((e) => e.user_id === "dinner").map((e: Event) => (
             <Card
               key={e.id}
               shadow="xs"
-              p="md"
+              p="xs"
+              radius="md"
               onClick={() => openModal(e)}
               style={{
                 cursor: "pointer",
-                borderLeft: `5px solid ${
-                  e.user_id === "hiro"
-                    ? "#228be6"
-                    : e.user_id === "aki"
-                      ? "#fa52bf"
-                      : "#fab005"
-                }`,
+                borderLeft: "4px solid #12b886",
+                backgroundColor: "#f8fff8",
               }}
             >
-              <Group justify="space-between">
-                <Title order={5}>{e.title}</Title>
-
-                <Badge
-                  color={
-                    e.user_id === "hiro"
-                      ? "blue"
-                      : e.user_id === "aki"
-                        ? "pink"
-                        : "yellow"
-                  }
-                >
-                  {e.user_id === "hiro"
-                    ? "ひろくま"
-                    : e.user_id === "aki"
-                      ? "あきくま"
-                      : "あきくま・ひろくま"}
-                </Badge>
+              <Group justify="space-between" align="center">
+                <Box fw={600} size="sm">{e.title || ""}</Box>
+                {/* <Badge color="teal">ディナー</Badge> */}
               </Group>
-
-              <Box
-                style={{
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                }}
-              >
-                {e.memo}
-              </Box>
-
-              <Box style={{ fontSize: 12, opacity: 0.7 }}>
-                {e.start_time} - {e.end_time}
-              </Box>
             </Card>
           ))}
+          </Group>
+
+          {sortedEvents
+            .filter((e) => e.user_id !== "dinner")
+            .map((e: Event) => (
+              <Card
+                key={e.id}
+                shadow="xs"
+                p="md"
+                onClick={() => openModal(e)}
+                style={{
+                  cursor: "pointer",
+                  borderLeft: `5px solid ${
+                    e.user_id === "hiro"
+                      ? "#228be6"
+                      : e.user_id === "aki"
+                        ? "#fa52bf"
+                        : "#fab005"
+                  }`,
+                }}
+              >
+                <Group justify="space-between" align="flex-start">
+                  <Stack gap={4} style={{ flex: 1 }}>
+                    <Title order={5}>{e.title || "（タイトルなし）"}</Title>
+                  </Stack>
+
+                  <Badge
+                    color={
+                      e.user_id === "hiro"
+                        ? "blue"
+                        : e.user_id === "aki"
+                          ? "pink"
+                          : "yellow"
+                    }
+                  >
+                    {e.user_id === "hiro"
+                      ? "ひろくま"
+                      : e.user_id === "aki"
+                        ? "あきくま"
+                        : "あきくま・ひろくま"}
+                  </Badge>
+                </Group>
+
+                <Box
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  {e.memo}
+                </Box>
+
+                <Box style={{ fontSize: 12, opacity: 0.7 }}>
+                  {e.start_time} - {e.end_time}
+                </Box>
+              </Card>
+            ))}
         </Stack>
       )}
 
@@ -489,11 +556,12 @@ export default function ClientPage() {
 
           <Select
             value={eventUser}
-            onChange={(v) => v && setEventUser(v as "hiro" | "aki" | "akihiro")}
+            onChange={(v) => handleUserChange(v as UserId | null)}
             data={[
               { value: "aki", label: "あきくま" },
               { value: "hiro", label: "ひろくま" },
               { value: "akihiro", label: "あきくま・ひろくま" },
+              { value: "dinner", label: "ディナー" },
             ]}
           />
 
@@ -502,12 +570,14 @@ export default function ClientPage() {
               type="time"
               error={errors.start_time}
               value={startTime}
+              disabled={eventUser === "dinner"}
               onChange={(e) => setStartTime(e.currentTarget.value)}
             />
             <TextInput
               type="time"
               value={endTime}
               error={errors.end_time}
+              disabled={eventUser === "dinner"}
               onChange={(e) => setEndTime(e.currentTarget.value)}
             />
           </Group>
