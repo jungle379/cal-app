@@ -91,7 +91,7 @@ export default function ClientPage() {
   const [editDate, setEditDate] = useState("");
 
   const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("10:00");
+  const [endTime, setEndTime] = useState("18:00");
 
   const [opened, setOpened] = useState(false);
   const [deleteOpened, setDeleteOpened] = useState(false);
@@ -111,7 +111,7 @@ export default function ClientPage() {
     }
 
     setStartTime("09:00");
-    setEndTime("10:00");
+    setEndTime("18:00");
   };
 
   const [bulkMode, setBulkMode] = useState<"range" | "month">("range");
@@ -137,12 +137,13 @@ export default function ClientPage() {
   if (toast !== null) {
     setTimeout(() => {
       setToast(null);
-    }, 3000);
+    }, 2000);
   }
 
   // 🔴 日付マーク
   const eventDates = useMemo(
-    () => new Set(allEvents.map((e: Event) => e.date)),
+    // dinnerの予定はマークしない
+    () => new Set(allEvents.filter((e) => e.user_id !== "dinner").map((e: Event) => e.date)),
     [allEvents],
   );
 
@@ -199,7 +200,7 @@ export default function ClientPage() {
     setTitle("");
     setMemo("");
     setStartTime("09:00");
-    setEndTime("10:00");
+    setEndTime("18:00");
     setEventUser("aki");
     setToast("予定を追加しました。");
     window.scrollTo(0, 0);
@@ -221,7 +222,7 @@ export default function ClientPage() {
     setMemo("");
     setEventUser("aki");
     setStartTime("09:00");
-    setEndTime("10:00");
+    setEndTime("18:00");
     setOpened(false);
   };
 
@@ -251,7 +252,7 @@ export default function ClientPage() {
     setMemo("");
     setEventUser("aki");
     setStartTime("09:00");
-    setEndTime("10:00");
+    setEndTime("18:00");
     setToast("予定を更新しました。");
     window.scrollTo(0, 0);
   };
@@ -267,7 +268,7 @@ export default function ClientPage() {
     setMemo("");
     setEventUser("aki");
     setStartTime("09:00");
-    setEndTime("10:00");
+    setEndTime("18:00");
     setToast("予定を削除しました。");
     window.scrollTo(0, 0);
   };
@@ -465,7 +466,6 @@ export default function ClientPage() {
             >
               <Group justify="space-between" align="center">
                 <Box fw={600} size="sm">{e.title || ""}</Box>
-                {/* <Badge color="teal">ディナー</Badge> */}
               </Group>
             </Card>
           ))}
