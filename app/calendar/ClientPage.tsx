@@ -77,11 +77,12 @@ const eventSchema = z
       });
     }
   });
-
 // -----------------------------
 
 // カレンダーページ
 export default function ClientPage() {
+  // -----------------------------
+  // State
   const [date, setDate] = useState<Date>(new Date());
 
   const [title, setTitle] = useState("");
@@ -120,9 +121,12 @@ export default function ClientPage() {
   const [bulkMonth, setBulkMonth] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  // -----------------------------
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
+  // -----------------------------
+  // APIフック
   const { data: allEvents = [], isLoading, isFetching, error, refetch } = useEvents();
 
   const events = allEvents.filter((e) => e.date === formattedDate);
@@ -130,6 +134,7 @@ export default function ClientPage() {
   const deleteEvent = useDeleteEvent();
   const updateEvent = useUpdateEvent();
   const bulkDelete = useBulkDeleteEvents();
+  // -----------------------------
 
   const formattedTime = (t: string) => t.slice(0, 5);
 
@@ -140,6 +145,8 @@ export default function ClientPage() {
     [allEvents],
   );
 
+  // -----------------------------
+  // カレンダーのタイルにマークを表示
   const tileContent = ({ date, view }: TileProps) => {
     if (view !== "month") return null;
     const d = format(date, "yyyy-MM-dd");
@@ -148,6 +155,7 @@ export default function ClientPage() {
     }
     return null;
   };
+  // -----------------------------
 
   // バリデーション関数
   const validate = () => {
@@ -254,16 +262,22 @@ export default function ClientPage() {
   const handleDelete = async () => {
     if (!selectedEvent) return;
 
-    deleteEvent.mutate(selectedEvent.id);
-    setDeleteOpened(false);
-    setOpened(false);
-    setTitle("");
-    setMemo("");
-    setEventUser("aki");
-    setStartTime("09:00");
-    setEndTime("18:00");
-    sonnerToast.success("予定を削除しました。");
-    window.scrollTo(0, 0);
+    try {
+      await deleteEvent.mutateAsync(selectedEvent.id);
+
+      setDeleteOpened(false);
+      setOpened(false);
+      setTitle("");
+      setMemo("");
+      setEventUser("aki");
+      setStartTime("09:00");
+      setEndTime("18:00");
+      sonnerToast.success("予定を削除しました。");
+      window.scrollTo(0, 0);
+    } catch {
+      sonnerToast.error("削除失敗");
+      window.scrollTo(0, 0);
+    }
   };
 
   // ⏰ ソート
@@ -597,7 +611,12 @@ export default function ClientPage() {
               キャンセル
             </Button>
 
-            <Button color="red" onClick={handleDelete}>
+            <Button
+              color="red"
+              onClick={handleDelete}
+              loading={deleteEvent.isPending}
+              disabled={deleteEvent.isPending}
+            >
               削除する
             </Button>
           </Group>
