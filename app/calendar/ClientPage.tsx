@@ -18,11 +18,11 @@ import {
   Card,
   Title,
   Box,
-  Notification,
   SegmentedControl,
   Center,
   Loader,
 } from "@mantine/core";
+import { Toaster, toast as sonnerToast } from "sonner";
 import z from "zod";
 import { useEvents } from "@/hooks/useEvent";
 import { useAddEvent } from "@/hooks/useAddEvent";
@@ -120,11 +120,10 @@ export default function ClientPage() {
   const [bulkMonth, setBulkMonth] = useState("");
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [toast, setToast] = useState<string | null>(null);
 
   const formattedDate = format(date, "yyyy-MM-dd");
 
-  const { data: allEvents = [], isLoading, error, refetch } = useEvents();
+  const { data: allEvents = [], isLoading, isFetching, error, refetch } = useEvents();
 
   const events = allEvents.filter((e) => e.date === formattedDate);
   const addEvent = useAddEvent();
@@ -133,12 +132,6 @@ export default function ClientPage() {
   const bulkDelete = useBulkDeleteEvents();
 
   const formattedTime = (t: string) => t.slice(0, 5);
-
-  if (toast !== null) {
-    setTimeout(() => {
-      setToast(null);
-    }, 2000);
-  }
 
   // 🔴 日付マーク
   const eventDates = useMemo(
@@ -185,7 +178,7 @@ export default function ClientPage() {
     if (!validate()) return;
 
     if (!formattedDate) {
-      setToast("日付が設定誤りです。");
+      sonnerToast.error("日付が設定誤りです。");
       return;
     }
     await addEvent.mutateAsync({
@@ -202,7 +195,7 @@ export default function ClientPage() {
     setStartTime("09:00");
     setEndTime("18:00");
     setEventUser("aki");
-    setToast("予定を追加しました。");
+    sonnerToast.success("予定を追加しました。");
     window.scrollTo(0, 0);
   };
 
@@ -253,7 +246,7 @@ export default function ClientPage() {
     setEventUser("aki");
     setStartTime("09:00");
     setEndTime("18:00");
-    setToast("予定を更新しました。");
+    sonnerToast.success("予定を更新しました。");
     window.scrollTo(0, 0);
   };
 
@@ -269,7 +262,7 @@ export default function ClientPage() {
     setEventUser("aki");
     setStartTime("09:00");
     setEndTime("18:00");
-    setToast("予定を削除しました。");
+    sonnerToast.success("予定を削除しました。");
     window.scrollTo(0, 0);
   };
 
@@ -285,11 +278,11 @@ export default function ClientPage() {
     try {
       if (bulkMode === "range") {
         if (!bulkStart || !bulkEnd) {
-          setToast("期間を選択してください");
+          sonnerToast.error("期間を選択してください");
           return;
         }
         if (bulkStart > bulkEnd) {
-          setToast("開始日は終了日より前にしてください");
+          sonnerToast.error("開始日は終了日より前にしてください");
           return;
         }
 
@@ -302,7 +295,7 @@ export default function ClientPage() {
 
       if (bulkMode === "month") {
         if (!bulkMonth) {
-          setToast("月を選択してください");
+          sonnerToast.error("月を選択してください");
           return;
         }
 
@@ -313,10 +306,10 @@ export default function ClientPage() {
       }
 
       setBulkOpened(false);
-      setToast("削除しました");
+      sonnerToast.success("削除しました");
       window.scrollTo(0, 0);
     } catch {
-      setToast("削除失敗");
+      sonnerToast.error("削除失敗");
       window.scrollTo(0, 0);
     }
   };
@@ -336,7 +329,7 @@ export default function ClientPage() {
 
   // -----------------------------
 
-  if (isLoading) {
+  if (isLoading || isFetching) {
     return (
       <Center style={{ minHeight: "100vh" }}>
         <Loader />
@@ -362,29 +355,28 @@ export default function ClientPage() {
             aria-label="リロード"
             style={{ marginLeft: 20 }}
             size="lg"
+            disabled={isFetching}
+            aria-busy={isFetching}
+            title={isFetching ? "読み込み中..." : "リロード"}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
-            </svg>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.13-9.36L23 10" />
+              </svg>
           </ActionIcon>
       </Group>
 
-      {toast && (
-        <Notification color="teal" onClose={() => setToast(null)}>
-          {toast}
-        </Notification>
-      )}
+      <Toaster position="top-right" />
 
       {/* カレンダー */}
       <Center>
