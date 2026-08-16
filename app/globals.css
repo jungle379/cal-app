@@ -25,6 +25,14 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 【モーダル表示時のビューポート変化対策】
+   Mantine Modal が開く際、body に overflow: hidden が付与されます。
+   スマートフォンではこの時、ビューポート高さが変わる（URLバーが隠れたり表示されたり）
+   ため、親コンテナ（Stack）にも overflow: hidden を付与し、
+   その変化の影響を最小化しています。
+   さらに window.scrollTo(0, 0) の呼び出しを削除することで、
+   スクロール位置の復帰とビューポート高さの変更の競合を防いでいます。 */
+
 /* react-calendar */
 .app-react-calendar.react-calendar {
   width: 100%;

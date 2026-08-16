@@ -204,7 +204,7 @@ export default function ClientPage() {
     setEndTime("18:00");
     setEventUser("aki");
     sonnerToast.success("予定を追加しました。");
-    window.scrollTo(0, 0);
+    // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
   };
 
   // ✏️ モーダル開く
@@ -255,7 +255,7 @@ export default function ClientPage() {
     setStartTime("09:00");
     setEndTime("18:00");
     sonnerToast.success("予定を更新しました。");
-    window.scrollTo(0, 0);
+    // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
   };
 
   // 🗑 削除
@@ -273,10 +273,10 @@ export default function ClientPage() {
       setStartTime("09:00");
       setEndTime("18:00");
       sonnerToast.success("予定を削除しました。");
-      window.scrollTo(0, 0);
+      // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
     } catch {
       sonnerToast.error("削除失敗");
-      window.scrollTo(0, 0);
+      // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
     }
   };
 
@@ -321,10 +321,10 @@ export default function ClientPage() {
 
       setBulkOpened(false);
       sonnerToast.success("削除しました");
-      window.scrollTo(0, 0);
+      // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
     } catch {
       sonnerToast.error("削除失敗");
-      window.scrollTo(0, 0);
+      // スマホでのビューポート変化を回避するため、scrollTo呼び出しを削除
     }
   };
 
@@ -359,8 +359,14 @@ export default function ClientPage() {
     );
   }
 
+  // 【スマホモーダル問題対策】
+  // 原因: Mantineモーダルが開く際、bodyに`overflow: hidden`が付与される。
+  //      スマートフォンではビューポート高さが変わる（URLバー隠れ/表示）ため、
+  //      モーダル開閉時にbodyの高さが縮み、親Stackも一緒に縮む。
+  // 対策: Stack に`overflow: hidden; position: relative;` を付与し、
+  //      ビューポート変化の影響を最小化。window.scrollTo呼び出しも削除。
   return (
-    <Stack p="md" maw={560} mx="auto">
+    <Stack p="md" maw={560} mx="auto" style={{ overflow: "hidden", position: "relative" }}>
       <Group align="end">
         <Title order={2}>共有カレンダー</Title>
           <ActionIcon
